@@ -4,17 +4,12 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { GoogleMap, Marker, Polyline, useLoadScript } from '@react-google-maps/api';
 import UserInfo from './UserInfo';
 // Import modern icons
-import { FaMapMarkerAlt, FaRegClock, FaGlobe, FaSatellite, FaRoad, FaListUl } from 'react-icons/fa'; 
+import { FaGlobe, FaSatellite, FaRoad, FaListUl } from 'react-icons/fa'; 
 
 // ===================================================
 // CONFIGURATION
 // ===================================================
 
-const containerStyle = {
-  width: '100%',
-  height: '70vh', 
-  borderRadius: '10px', 
-};
 const defaultCenter = { lat: 14.00, lng: 121.00 }; 
 const API_URL = process.env.REACT_APP_API_URL;
 const REFRESH_INTERVAL_MS = 5000; 
@@ -36,11 +31,12 @@ const topContentGridStyle = {
     alignItems: 'stretch',
 };
 
-function LiveMap({ stickId, onLocationUpdate }) {
+function LiveMap({ stickId, onLocationUpdate, onStatusChange }) {
     const [currentLocation, setCurrentLocation] = useState(null);
     const [pathHistory, setPathHistory] = useState([]); 
     const [mapCenter, setMapCenter] = useState(defaultCenter);
     const [mapTypeId, setMapTypeId] = useState('roadmap'); 
+    const [isInitialLoad, setIsInitialLoad] = useState(true); // New state to track initial data fetch
     const [windowWidth, setWindowWidth] = useState(window.innerWidth);
     
     const JWT_TOKEN = localStorage.getItem('token'); 
@@ -71,14 +67,20 @@ function LiveMap({ stickId, onLocationUpdate }) {
 
         try {
             const response = await authFetch(`/api/latest`);
+            
+            // If we get a response, the server is reachable (even if 404 or 500)
+            if (onStatusChange) onStatusChange(true);
+
             if (!response.ok) {
                 console.warn(`Latest location fetch failed: Status ${response.status}`);
+                if (isInitialLoad) setIsInitialLoad(false); // Initial load attempt is complete
                 return;
             }
             const data = await response.json();
             
             if (!data || !data.location || !data.location.coordinates) {
                 console.warn("Location data received is incomplete. Skipping update.");
+                if (isInitialLoad) setIsInitialLoad(false); // Initial load attempt is complete
                 return;
             }
 
@@ -93,11 +95,14 @@ function LiveMap({ stickId, onLocationUpdate }) {
             
             setMapCenter(newPos);
             if (onLocationUpdate) onLocationUpdate(timestamp);
+            if (isInitialLoad) setIsInitialLoad(false); // Data received, initial load is complete
             
         } catch (error) {
             console.error("Error fetching latest data:", error.message);
+            if (onStatusChange) onStatusChange(false);
+            if (isInitialLoad) setIsInitialLoad(false); // Initial load attempt is complete
         }
-    }, [JWT_TOKEN, stickId, authFetch, onLocationUpdate]);
+    }, [JWT_TOKEN, stickId, authFetch, onLocationUpdate, onStatusChange, isInitialLoad]);
 
 
     // --- 2. Fetch Path History (Robust Error Handling) ---
@@ -107,6 +112,9 @@ function LiveMap({ stickId, onLocationUpdate }) {
         try {
             const response = await authFetch(`/api/history?limit=500`); 
             
+            // If we get a response, the server is reachable
+            if (onStatusChange) onStatusChange(true);
+
             if (!response.ok) {
                 console.error(`API Error fetching history: Status ${response.status}`);
                 setPathHistory([]); 
@@ -126,8 +134,9 @@ function LiveMap({ stickId, onLocationUpdate }) {
         } catch (error) {
             console.error("Network or parsing error fetching history:", error.message);
             setPathHistory([]); 
+            if (onStatusChange) onStatusChange(false);
         }
-    }, [JWT_TOKEN, stickId, authFetch]);
+    }, [JWT_TOKEN, stickId, authFetch, onStatusChange]);
 
 
     // --- 3. Lifecycle Effects ---
@@ -253,6 +262,19 @@ function LiveMap({ stickId, onLocationUpdate }) {
                                         scale: 1.5,
                                     }}
                                 />
+                            )}
+
+                            {/* 3. Message for when no location has been received yet */}
+                            {!currentLocation && !isInitialLoad && (
+                                <div style={{
+                                    position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+                                    backgroundColor: 'rgba(34, 40, 49, 0.85)',
+                                    color: '#EEEEEE', padding: '15px 25px', borderRadius: '8px',
+                                    textAlign: 'center', boxShadow: '0 4px 10px rgba(0,0,0,0.2)',
+                                    fontSize: '1.1em'
+                                }}>
+                                    Waiting for the first location update from the device...
+                                </div>
                             )}
                         </GoogleMap>
                     </div>

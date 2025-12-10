@@ -4,13 +4,14 @@ import React, { useState, useEffect } from 'react';
 import LiveMap from './LiveMap';
 import Login from './Login';
 import Register from './Register'; 
-import { FaRegClock } from 'react-icons/fa';
+import { FaRegClock, FaUnlink } from 'react-icons/fa';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [stickId, setStickId] = useState(null);
   const [isRegistering, setIsRegistering] = useState(false);
   const [lastUpdate, setLastUpdate] = useState(null);
+  const [isLive, setIsLive] = useState(true); // To track connection status
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
 
   useEffect(() => {
@@ -92,17 +93,24 @@ function App() {
             )}
             
             {/* Live Status Indicator */}
-            <div style={{ display: 'flex', alignItems: 'center', backgroundColor: 'rgba(46, 204, 113, 0.1)', padding: '5px 12px', borderRadius: '20px', border: '1px solid #2ecc71' }}>
-                <span className="live-pulse" style={{ 
-                    height: '8px', 
-                    width: '8px', 
-                    backgroundColor: '#2ecc71', 
-                    borderRadius: '50%', 
-                    display: 'inline-block', 
-                    marginRight: '6px'
-                }}></span>
-                <span style={{ color: '#2ecc71', fontWeight: 'bold', fontSize: '0.8em', letterSpacing: '1px' }}>LIVE</span>
-            </div>
+            {isLive ? (
+              <div style={{ display: 'flex', alignItems: 'center', backgroundColor: 'rgba(46, 204, 113, 0.1)', padding: '5px 12px', borderRadius: '20px', border: '1px solid #2ecc71' }}>
+                  <span className="live-pulse" style={{ 
+                      height: '8px', 
+                      width: '8px', 
+                      backgroundColor: '#2ecc71', 
+                      borderRadius: '50%', 
+                      display: 'inline-block', 
+                      marginRight: '6px'
+                  }}></span>
+                  <span style={{ color: '#2ecc71', fontWeight: 'bold', fontSize: '0.8em', letterSpacing: '1px' }}>LIVE</span>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', alignItems: 'center', backgroundColor: 'rgba(231, 76, 60, 0.1)', padding: '5px 12px', borderRadius: '20px', border: '1px solid #e74c3c' }}>
+                  <FaUnlink style={{ color: '#e74c3c', marginRight: '6px' }} />
+                  <span style={{ color: '#e74c3c', fontWeight: 'bold', fontSize: '0.8em', letterSpacing: '1px' }}>OFFLINE</span>
+              </div>
+            )}
             
             {/* Logout Button (High contrast, clearly visible action) */}
             <button 
@@ -122,7 +130,7 @@ function App() {
             </button>
           </div>
         </header>
-        <LiveMap stickId={stickId} onLocationUpdate={setLastUpdate} />
+        <LiveMap stickId={stickId} onLocationUpdate={setLastUpdate} onStatusChange={setIsLive} />
       </div>
     );
   }
