@@ -24,8 +24,14 @@ app.use(express.json());
 
 // CORS Configuration: More secure for production
 // This restricts API access to your frontend's URL.
+const allowedOrigins = [
+    'http://localhost:3000',
+    'https://smart-walking-stick-iota.vercel.app',
+    process.env.FRONTEND_URL
+].filter(Boolean);
+
 const corsOptions = {
-    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+    origin: allowedOrigins,
     optionsSuccessStatus: 200
 };
 app.use(cors(corsOptions));
