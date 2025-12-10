@@ -21,9 +21,22 @@ const PORT = process.env.PORT || 5000;
 
 // Middleware
 app.use(express.json());
-// Allow cross-origin requests from the React frontend (running on a different port)
-app.use(cors()); 
 
+// CORS Configuration: More secure for production
+// This restricts API access to your frontend's URL.
+const corsOptions = {
+    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+    optionsSuccessStatus: 200
+};
+app.use(cors(corsOptions));
+
+// ===================================================
+// BASIC HEALTH CHECK
+// ===================================================
+app.get('/', (req, res) => {
+    res.status(200).json({ status: 'UP', message: 'Smart Stick Backend is running.' });
+});
+ 
 // ===================================================
 // AUTHENTICATION ROUTES
 // ===================================================

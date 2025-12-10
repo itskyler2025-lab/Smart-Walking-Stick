@@ -2,14 +2,12 @@
 
 import React, { useState } from 'react';
 
-const API_URL = process.env.REACT_APP_API_URL;
-const MOBILE_BREAKPOINT = 600;
+const API_URL = (process.env.REACT_APP_API_URL || '').replace(/\/$/, '');
 
 function Login({ onLoginSuccess, switchToRegister }) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const isMobile = window.innerWidth < MOBILE_BREAKPOINT;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
