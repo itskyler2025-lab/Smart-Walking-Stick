@@ -1,4 +1,4 @@
-// scripts/replace-sw-vars.js
+// scripts/replace-sw-vars.cjs
 const replace = require('replace-in-file');
 const path = require('path');
 

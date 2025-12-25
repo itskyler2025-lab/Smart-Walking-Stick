@@ -28,7 +28,7 @@
   },
   "scripts": {
     "start": "vite",
-    "build": "node scripts/replace-sw-vars.js && vite build",
+    "build": "node scripts/replace-sw-vars.cjs && vite build",
     "preview": "vite preview"
   }
 }
