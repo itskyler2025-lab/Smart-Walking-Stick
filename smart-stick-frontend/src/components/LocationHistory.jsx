@@ -1,7 +1,7 @@
 import React from 'react';
-import { FaListUl } from 'react-icons/fa';
+import { FaListUl, FaMapMarkerAlt } from 'react-icons/fa';
 
-const LocationHistory = ({ groupedHistory, hasHistory }) => {
+const LocationHistory = ({ groupedHistory, hasHistory, onSelectPoint }) => {
     return (
         <div style={{ minWidth: 0, marginTop: '15px', width: '100%' }}> 
             <div style={{ 
@@ -47,12 +47,40 @@ const LocationHistory = ({ groupedHistory, hasHistory }) => {
                                         weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
                                     })}
                                 </h4>
-                                <ul style={{ listStyleType: 'none', paddingLeft: '15px' }}>
-                                    {groupedHistory[dateKey].slice().reverse().map((point, index) => (
-                                        <li key={`${dateKey}-${index}`} style={{ padding: '8px 0', borderBottom: '1px dotted #4a5568', fontSize: '0.9em', color: '#EEEEEE' }}>
-                                            <strong style={{ color: '#00ADB5' }}>Time:</strong> {new Date(point.time).toLocaleTimeString('en-US')}
-                                            <br />
-                                            <span style={{ opacity: 0.8 }}>Lat: {point.lat.toFixed(4)}, Lon: {point.lng.toFixed(4)}</span>
+                                <ul style={{ listStyleType: 'none', paddingLeft: '10px', position: 'relative' }}>
+                                    {groupedHistory[dateKey].slice().reverse().map((point, index, arr) => (
+                                        <li key={`${dateKey}-${index}`} style={{ 
+                                            padding: '0 0 20px 20px', 
+                                            position: 'relative',
+                                            // Draw vertical line for all items except the last one in the group
+                                            borderLeft: index !== arr.length - 1 ? '2px solid #4a5568' : '2px solid transparent', 
+                                            marginLeft: '10px'
+                                        }}>
+                                            {/* Timeline Dot */}
+                                            <div style={{
+                                                position: 'absolute', left: '-6px', top: '0',
+                                                width: '10px', height: '10px', borderRadius: '50%',
+                                                backgroundColor: '#00ADB5', border: '2px solid #393E46'
+                                            }} />
+                                            
+                                            {/* Content */}
+                                            <div style={{ marginTop: '-5px' }}>
+                                                <strong style={{ color: '#EEEEEE', fontSize: '0.95em' }}>
+                                                    {new Date(point.time).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                                                </strong>
+                                                {/* Replaced raw coordinates with a functional link */}
+                                                <div 
+                                                    onClick={() => onSelectPoint && onSelectPoint(point)}
+                                                    style={{ 
+                                                        fontSize: '0.85em', color: '#00ADB5', marginTop: '2px', 
+                                                        cursor: 'pointer', display: 'flex', alignItems: 'center',
+                                                        width: 'fit-content'
+                                                    }}
+                                                    title={`Lat: ${point.lat.toFixed(5)}, Lng: ${point.lng.toFixed(5)}`}
+                                                >
+                                                    <FaMapMarkerAlt style={{ marginRight: '4px' }} /> View Location
+                                                </div>
+                                            </div>
                                         </li>
                                     ))}
                                 </ul>

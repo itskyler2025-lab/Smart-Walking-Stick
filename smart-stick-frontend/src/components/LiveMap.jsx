@@ -84,6 +84,10 @@ function LiveMap({ stickId, onLocationUpdate, onStatusChange, onAuthError, onBat
     const [isFollowing, setIsFollowing] = useState(true);
     const [mapReady, setMapReady] = useState(false);
     
+    // Date Filter State
+    const [startDate, setStartDate] = useState('');
+    const [endDate, setEndDate] = useState('');
+    
     const [groupedHistory, setGroupedHistory] = useState({});
     useEffect(() => {
         const handleResize = () => setWindowWidth(window.innerWidth);
@@ -175,7 +179,11 @@ function LiveMap({ stickId, onLocationUpdate, onStatusChange, onAuthError, onBat
         if (!stickId) return;
 
         try {
-            const response = await api.get('/api/history?limit=500'); 
+            const params = new URLSearchParams({ limit: 500 });
+            if (startDate) params.append('startDate', startDate);
+            if (endDate) params.append('endDate', endDate);
+
+            const response = await api.get(`/api/history?${params.toString()}`); 
             
             // If we get a response, the server is reachable
             if (onStatusChange) onStatusChange(true);
@@ -195,7 +203,7 @@ function LiveMap({ stickId, onLocationUpdate, onStatusChange, onAuthError, onBat
             setPathHistory([]); 
             if (onStatusChange) onStatusChange(false);
         }
-    }, [stickId, onStatusChange]);
+    }, [stickId, onStatusChange, startDate, endDate]);
 
     // --- 3. Emergency Clear Handler ---
     const handleClearEmergency = async () => {
@@ -216,6 +224,13 @@ function LiveMap({ stickId, onLocationUpdate, onStatusChange, onAuthError, onBat
             setMapZoom(18);
             setIsFollowing(true);
         }
+    };
+
+    // --- 3.6 History Item Click Handler ---
+    const handleHistoryItemClick = (point) => {
+        setMapCenter({ lat: point.lat, lng: point.lng });
+        setMapZoom(20); // Zoom in close to the selected point
+        setIsFollowing(false); // Stop following live updates so user can inspect this point
     };
 
     // --- 4. Emergency Sound Loop ---
@@ -462,9 +477,61 @@ function LiveMap({ stickId, onLocationUpdate, onStatusChange, onAuthError, onBat
             </div>
             
             {/* 2. BOTTOM ROW: Location History List (FULL WIDTH) */}
+            
+            {/* Date Filter Controls */}
+            <div style={{ 
+                marginTop: '20px', 
+                padding: '15px', 
+                backgroundColor: '#393E46', 
+                borderRadius: '10px', 
+                display: 'flex', 
+                gap: '15px', 
+                alignItems: 'center',
+                flexWrap: 'wrap',
+                boxShadow: '0 4px 15px rgba(0,0,0,0.1)'
+            }}>
+                <strong style={{ color: '#00ADB5' }}>Filter History:</strong>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <label style={{ color: '#EEEEEE', fontSize: '0.9em' }}>From:</label>
+                    <input 
+                        type="date" 
+                        value={startDate} 
+                        onChange={(e) => setStartDate(e.target.value)}
+                        style={{ padding: '8px', borderRadius: '5px', border: '1px solid #00ADB5', backgroundColor: '#222831', color: 'white', outline: 'none' }}
+                    />
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <label style={{ color: '#EEEEEE', fontSize: '0.9em' }}>To:</label>
+                    <input 
+                        type="date" 
+                        value={endDate} 
+                        onChange={(e) => setEndDate(e.target.value)}
+                        style={{ padding: '8px', borderRadius: '5px', border: '1px solid #00ADB5', backgroundColor: '#222831', color: 'white', outline: 'none' }}
+                    />
+                </div>
+                {(startDate || endDate) && (
+                    <button 
+                        onClick={() => { setStartDate(''); setEndDate(''); }}
+                        style={{ 
+                            padding: '8px 15px', 
+                            backgroundColor: '#e74c3c', 
+                            color: 'white', 
+                            border: 'none', 
+                            borderRadius: '5px', 
+                            cursor: 'pointer',
+                            fontWeight: 'bold',
+                            marginLeft: 'auto'
+                        }}
+                    >
+                        Clear Filter
+                    </button>
+                )}
+            </div>
+
             <LocationHistory 
                 groupedHistory={groupedHistory} 
                 hasHistory={pathHistory.length > 0} 
+                onSelectPoint={handleHistoryItemClick}
             />
         </div>
     );

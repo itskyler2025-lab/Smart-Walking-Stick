@@ -99,8 +99,27 @@ module.exports = function(io) {
         try {
             const stickId = req.user.stickId;
             const limit = parseInt(req.query.limit) || 200; 
+            const { startDate, endDate } = req.query;
 
-            const history = await Location.find({ stickId })
+            let query = { stickId };
+
+            // Add date range filter if provided
+            if (startDate || endDate) {
+                query.timestamp = {};
+                if (startDate) {
+                    query.timestamp.$gte = new Date(startDate);
+                }
+                if (endDate) {
+                    const end = new Date(endDate);
+                    // If only date is provided (YYYY-MM-DD), set to end of day to include all events on that day
+                    if (endDate.length === 10) {
+                        end.setHours(23, 59, 59, 999);
+                    }
+                    query.timestamp.$lte = end;
+                }
+            }
+
+            const history = await Location.find(query)
                 .sort({ timestamp: -1 })
                 .limit(limit)
                 .select('location timestamp')
