@@ -7,6 +7,7 @@ import Login from './pages/Login';
 import Register from './pages/Register'; 
 import ResetPassword from './pages/ResetPassword';
 import { FaRegClock, FaUnlink } from 'react-icons/fa';
+import { TailSpin } from 'react-loader-spinner';
 import { requestForToken } from './utils/firebase'; // Import the new function
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -41,15 +42,23 @@ function App() {
   });
   const [lastUpdate, setLastUpdate] = useState(null);
   const [isLive, setIsLive] = useState(true); // To track connection status
+  const [isReconnecting, setIsReconnecting] = useState(false);
   const [batteryLevel, setBatteryLevel] = useState(null);
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
   const [isLogoutHovered, setIsLogoutHovered] = useState(false);
+  const [currentTime, setCurrentTime] = useState(Date.now());
   const navigate = useNavigate();
 
   useEffect(() => {
     const handleResize = () => setWindowWidth(window.innerWidth);
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Update 'currentTime' every minute to refresh the "X min ago" display
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(Date.now()), 60000);
+    return () => clearInterval(timer);
   }, []);
 
   // Effect to handle Push Notification setup
@@ -126,7 +135,7 @@ function App() {
           }}>
             {lastUpdate && (
               <span style={{ fontSize: '0.9em', display: 'flex', alignItems: 'center', color: '#EEEEEE', whiteSpace: 'nowrap' }}>
-                <FaRegClock style={{ marginRight: '5px' }} /> Last Update: {lastUpdate}
+                <FaRegClock style={{ marginRight: '5px' }} /> Last Update: {new Date(lastUpdate).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
               </span>
             )}
             
@@ -146,8 +155,18 @@ function App() {
             ) : (
               <div style={{ display: 'flex', alignItems: 'center', backgroundColor: 'rgba(231, 76, 60, 0.1)', padding: '5px 12px', borderRadius: '20px', border: '1px solid #e74c3c' }}>
                   <FaUnlink style={{ color: '#e74c3c', marginRight: '6px' }} />
-                  <span style={{ color: '#e74c3c', fontWeight: 'bold', fontSize: '0.8em', letterSpacing: '1px' }}>OFFLINE</span>
+                  <span style={{ color: '#e74c3c', fontWeight: 'bold', fontSize: '0.8em', letterSpacing: '1px' }}>
+                    OFFLINE {lastUpdate ? `(${Math.max(0, Math.floor((currentTime - new Date(lastUpdate).getTime()) / 60000))}m ago)` : ''}
+                  </span>
               </div>
+            )}
+
+            {/* Reconnecting Spinner - Shows when offline and trying to reconnect */}
+            {!isLive && isReconnecting && (
+               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <TailSpin color="#f1c40f" height={18} width={18} />
+                  <span style={{ color: '#f1c40f', fontSize: '0.8em', fontWeight: 'bold' }}>Reconnecting...</span>
+               </div>
             )}
             
             {/* Battery Level Indicator */}
@@ -192,7 +211,7 @@ function App() {
             </button>
           </div>
         </header>
-        <LiveMap stickId={stickId} onLocationUpdate={setLastUpdate} onStatusChange={setIsLive} onAuthError={handleLogout} onBatteryUpdate={setBatteryLevel} />
+        <LiveMap stickId={stickId} onLocationUpdate={setLastUpdate} onStatusChange={setIsLive} onAuthError={handleLogout} onBatteryUpdate={setBatteryLevel} onReconnecting={setIsReconnecting} />
         <ToastContainer 
           position="bottom-right"
           autoClose={5000}

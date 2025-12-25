@@ -68,3 +68,36 @@ code {
   animation: map-pulse-ring 2s infinite;
   pointer-events: none; /* Allow clicks to pass through to the map */
 }
+
+/* Marker Pulse Animation (Live Location) */
+@keyframes marker-pulse-ring {
+  0% {
+    transform: translate(-50%, -50%) scale(0.5);
+    opacity: 1;
+    box-shadow: 0 0 0 0 rgba(0, 173, 181, 0.7);
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(2.0);
+    opacity: 0;
+    box-shadow: 0 0 0 20px rgba(0, 173, 181, 0);
+  }
+}
+
+.live-marker-pulse::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 40px;
+  height: 40px;
+  background-color: rgba(0, 173, 181, 0.3);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  animation: marker-pulse-ring 2s infinite;
+  z-index: -1; /* Place behind the pin */
+  pointer-events: none;
+}
+
+.live-marker-pulse {
+  overflow: visible !important; /* Allow the pulse to expand outside the pin container */
+}

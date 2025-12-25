@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { TailSpin } from 'react-loader-spinner'; // Import the loader
 import { Link } from 'react-router-dom';
 import api from '../utils/api';
+import { FaEye, FaEyeSlash } from 'react-icons/fa';
 
 function Login({ onLoginSuccess }) {
   const [username, setUsername] = useState('');
@@ -15,6 +16,7 @@ function Login({ onLoginSuccess }) {
   const [loading, setLoading] = useState(false);
   const [isLinkHovered, setIsLinkHovered] = useState(false);
   const [isButtonHovered, setIsButtonHovered] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleLoginSubmit = async (e) => {
     e.preventDefault();
@@ -89,14 +91,32 @@ function Login({ onLoginSuccess }) {
               required
               style={{ width: '100%', padding: '12px', margin: '10px 0', boxSizing: 'border-box', border: '1px solid #00ADB5', borderRadius: '5px', backgroundColor: '#222831', color: '#EEEEEE' }}
             />
-            <input
-              type="password"
-              placeholder="Password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              style={{ width: '100%', padding: '12px', margin: '10px 0', boxSizing: 'border-box', border: '1px solid #00ADB5', borderRadius: '5px', backgroundColor: '#222831', color: '#EEEEEE' }}
-            />
+            <div style={{ position: 'relative', width: '100%', margin: '10px 0' }}>
+              <input
+                type={showPassword ? "text" : "password"}
+                placeholder="Password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                style={{ width: '100%', padding: '12px', paddingRight: '40px', margin: 0, boxSizing: 'border-box', border: '1px solid #00ADB5', borderRadius: '5px', backgroundColor: '#222831', color: '#EEEEEE' }}
+              />
+              <span
+                onClick={() => setShowPassword(!showPassword)}
+                style={{
+                  position: 'absolute',
+                  right: '12px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  cursor: 'pointer',
+                  color: '#00ADB5',
+                  display: 'flex',
+                  alignItems: 'center',
+                  fontSize: '1.2em'
+                }}
+              >
+                {showPassword ? <FaEyeSlash /> : <FaEye />}
+              </span>
+            </div>
           </>
         ) : (
           <input

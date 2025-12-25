@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { TailSpin } from 'react-loader-spinner';
+import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import api from '../utils/api';
 
 function ResetPassword({ token, onResetSuccess }) {
@@ -11,6 +12,8 @@ function ResetPassword({ token, onResetSuccess }) {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [isButtonHovered, setIsButtonHovered] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -61,22 +64,33 @@ function ResetPassword({ token, onResetSuccess }) {
         {error && <p style={{ color: '#e74c3c', padding: '10px', backgroundColor: '#fcecec', borderRadius: '5px' }}>{error}</p>}
         {message && <p style={{ color: '#2ecc71', padding: '10px', backgroundColor: '#eafaf1', borderRadius: '5px' }}>{message}</p>}
         
-        <input
-          type="password"
-          placeholder="New Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-          style={{ width: '100%', padding: '12px', margin: '10px 0', boxSizing: 'border-box', border: '1px solid #00ADB5', borderRadius: '5px', backgroundColor: '#222831', color: '#EEEEEE' }}
-        />
-        <input
-          type="password"
-          placeholder="Confirm New Password"
-          value={confirmPassword}
-          onChange={(e) => setConfirmPassword(e.target.value)}
-          required
-          style={{ width: '100%', padding: '12px', margin: '10px 0', boxSizing: 'border-box', border: '1px solid #00ADB5', borderRadius: '5px', backgroundColor: '#222831', color: '#EEEEEE' }}
-        />
+        <div style={{ position: 'relative', width: '100%', margin: '10px 0' }}>
+          <input
+            type={showPassword ? "text" : "password"}
+            placeholder="New Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            style={{ width: '100%', padding: '12px', paddingRight: '40px', margin: 0, boxSizing: 'border-box', border: '1px solid #00ADB5', borderRadius: '5px', backgroundColor: '#222831', color: '#EEEEEE' }}
+          />
+          <span onClick={() => setShowPassword(!showPassword)} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', cursor: 'pointer', color: '#00ADB5', display: 'flex', alignItems: 'center', fontSize: '1.2em' }}>
+            {showPassword ? <FaEyeSlash /> : <FaEye />}
+          </span>
+        </div>
+
+        <div style={{ position: 'relative', width: '100%', margin: '10px 0' }}>
+          <input
+            type={showConfirmPassword ? "text" : "password"}
+            placeholder="Confirm New Password"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            required
+            style={{ width: '100%', padding: '12px', paddingRight: '40px', margin: 0, boxSizing: 'border-box', border: '1px solid #00ADB5', borderRadius: '5px', backgroundColor: '#222831', color: '#EEEEEE' }}
+          />
+          <span onClick={() => setShowConfirmPassword(!showConfirmPassword)} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', cursor: 'pointer', color: '#00ADB5', display: 'flex', alignItems: 'center', fontSize: '1.2em' }}>
+            {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
+          </span>
+        </div>
         
         <button type="submit" disabled={loading} 
           onMouseEnter={() => setIsButtonHovered(true)}

@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { TailSpin } from 'react-loader-spinner'; // Import the loader
-import { FaUserPlus } from 'react-icons/fa';
+import { FaUserPlus, FaEye, FaEyeSlash } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
 import api from '../utils/api';
 import { toast } from 'react-toastify';
@@ -16,6 +16,7 @@ function Register({ onRegisterSuccess }) {
     const [loading, setLoading] = useState(false);
     const [isLinkHovered, setIsLinkHovered] = useState(false);
     const [isButtonHovered, setIsButtonHovered] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -56,7 +57,27 @@ function Register({ onRegisterSuccess }) {
         
         <input type="text" placeholder="Username" value={username} onChange={(e) => setUsername(e.target.value)} required style={{ width: '100%', padding: '12px', margin: '10px 0', boxSizing: 'border-box', backgroundColor: '#222831', color: '#EEEEEE', border: '1px solid #00ADB5', borderRadius: '5px' }} />
         <input type="email" placeholder="Email Address" value={email} onChange={(e) => setEmail(e.target.value)} required style={{ width: '100%', padding: '12px', margin: '10px 0', boxSizing: 'border-box', backgroundColor: '#222831', color: '#EEEEEE', border: '1px solid #00ADB5', borderRadius: '5px' }} />
-        <input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required style={{ width: '100%', padding: '12px', margin: '10px 0', boxSizing: 'border-box', backgroundColor: '#222831', color: '#EEEEEE', border: '1px solid #00ADB5', borderRadius: '5px' }} />
+        
+        <div style={{ position: 'relative', width: '100%', margin: '10px 0' }}>
+          <input type={showPassword ? "text" : "password"} placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required style={{ width: '100%', padding: '12px', paddingRight: '40px', margin: 0, boxSizing: 'border-box', backgroundColor: '#222831', color: '#EEEEEE', border: '1px solid #00ADB5', borderRadius: '5px' }} />
+          <span
+            onClick={() => setShowPassword(!showPassword)}
+            style={{
+              position: 'absolute',
+              right: '12px',
+              top: '50%',
+              transform: 'translateY(-50%)',
+              cursor: 'pointer',
+              color: '#00ADB5',
+              display: 'flex',
+              alignItems: 'center',
+              fontSize: '1.2em'
+            }}
+          >
+            {showPassword ? <FaEyeSlash /> : <FaEye />}
+          </span>
+        </div>
+
         <input type="text" placeholder="Stick ID (e.g., WALKSTK-001)" value={stickId} onChange={(e) => setStickId(e.target.value)} required style={{ width: '100%', padding: '12px', margin: '10px 0', boxSizing: 'border-box', backgroundColor: '#222831', color: '#EEEEEE', border: '1px solid #00ADB5', borderRadius: '5px' }} />
         
         <button type="submit"  disabled={loading} 

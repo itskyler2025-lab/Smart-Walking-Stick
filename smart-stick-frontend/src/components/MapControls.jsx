@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { FaRoad, FaGlobe, FaSatellite, FaLocationArrow } from 'react-icons/fa';
 
-const MapControls = ({ mapTypeId, setMapTypeId, isFollowing, onResetView, isMobile }) => {
+const MapControls = ({ mapTypeId, setMapTypeId, isFollowing, onToggleFollow, isMobile }) => {
     const [hoveredMapType, setHoveredMapType] = useState(null);
     const [isRecenterHovered, setIsRecenterHovered] = useState(false);
 
@@ -40,7 +40,7 @@ const MapControls = ({ mapTypeId, setMapTypeId, isFollowing, onResetView, isMobi
             ))}
 
             <button 
-                onClick={onResetView}
+                onClick={onToggleFollow}
                 onMouseEnter={() => setIsRecenterHovered(true)}
                 onMouseLeave={() => setIsRecenterHovered(false)}
                 style={{
@@ -57,7 +57,7 @@ const MapControls = ({ mapTypeId, setMapTypeId, isFollowing, onResetView, isMobi
                     minWidth: isMobile ? '100px' : 'auto',
                     marginLeft: isMobile ? '0' : 'auto'
                 }}>
-                <FaLocationArrow style={{ marginRight: '6px' }} /> {isFollowing ? 'Following' : 'Recenter'}
+                <FaLocationArrow style={{ marginRight: '6px' }} /> {isFollowing ? 'Following' : 'Follow Me'}
             </button>
         </div>
     );

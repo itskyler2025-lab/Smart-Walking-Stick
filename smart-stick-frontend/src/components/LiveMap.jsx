@@ -72,7 +72,7 @@ const topContentGridStyle = {
 
 const libraries = ['marker'];
 
-function LiveMap({ stickId, onLocationUpdate, onStatusChange, onAuthError, onBatteryUpdate }) {
+function LiveMap({ stickId, onLocationUpdate, onStatusChange, onAuthError, onBatteryUpdate, onReconnecting }) {
     const [currentLocation, setCurrentLocation] = useState(null);
     const [pathHistory, setPathHistory] = useState([]); 
     const [mapCenter, setMapCenter] = useState(defaultCenter);
@@ -89,6 +89,10 @@ function LiveMap({ stickId, onLocationUpdate, onStatusChange, onAuthError, onBat
     const [endDate, setEndDate] = useState('');
     
     const [groupedHistory, setGroupedHistory] = useState({});
+
+    // Ref to track last update time for offline detection
+    const lastUpdateTimestampRef = useRef(0);
+
     useEffect(() => {
         const handleResize = () => setWindowWidth(window.innerWidth);
         window.addEventListener('resize', handleResize);
@@ -116,6 +120,7 @@ function LiveMap({ stickId, onLocationUpdate, onStatusChange, onAuthError, onBat
     // Reference to the map instance for accessing state (like zoom)
     const mapRef = useRef(null);
     const markerRef = useRef(null);
+    const animationFrameRef = useRef(null);
 
     const onMapLoad = useCallback((map) => {
         mapRef.current = map;
@@ -135,9 +140,6 @@ function LiveMap({ stickId, onLocationUpdate, onStatusChange, onAuthError, onBat
         try {
             const response = await api.get('/api/latest');
             
-            // If we get a response, the server is reachable (even if 404 or 500)
-            if (onStatusChange) onStatusChange(true);
-
             const data = response.data;
             
             if (!data || !data.location || !data.location.coordinates) {
@@ -145,6 +147,12 @@ function LiveMap({ stickId, onLocationUpdate, onStatusChange, onAuthError, onBat
                 setIsInitialLoad(false); // Initial load attempt is complete
                 return;
             }
+
+            // Check if device is online (data < 60 seconds old)
+            const dataTime = new Date(data.timestamp).getTime();
+            lastUpdateTimestampRef.current = dataTime;
+            const isOnline = (Date.now() - dataTime) < 60000;
+            if (onStatusChange) onStatusChange(isOnline);
 
             const [lng, lat] = data.location.coordinates; 
             const newPos = { lat: parseFloat(lat), lng: parseFloat(lng) };
@@ -158,7 +166,7 @@ function LiveMap({ stickId, onLocationUpdate, onStatusChange, onAuthError, onBat
             if (isFollowingRef.current) {
                 setMapCenter(newPos);
             }
-            if (onLocationUpdate) onLocationUpdate(timestamp);
+            if (onLocationUpdate) onLocationUpdate(data.timestamp); // Send raw timestamp for calculation
             if (data.batteryLevel !== undefined && onBatteryUpdate) onBatteryUpdate(data.batteryLevel);
             
             // Check if the latest data has emergency flag
@@ -217,12 +225,20 @@ function LiveMap({ stickId, onLocationUpdate, onStatusChange, onAuthError, onBat
         }
     };
 
-    // --- 3.5 Reset View Handler ---
-    const handleResetView = () => {
-        if (currentLocation && currentLocation.position) {
-            setMapCenter(currentLocation.position);
-            setMapZoom(18);
-            setIsFollowing(true);
+    // --- 3.5 Toggle Follow Handler ---
+    const handleToggleFollow = () => {
+        if (isFollowing) {
+            setIsFollowing(false);
+        } else {
+            if (currentLocation && currentLocation.position) {
+                if (mapRef.current) {
+                    mapRef.current.panTo(currentLocation.position);
+                    mapRef.current.setZoom(18);
+                }
+                setMapCenter(currentLocation.position);
+                setMapZoom(18);
+                setIsFollowing(true);
+            }
         }
     };
 
@@ -284,8 +300,29 @@ function LiveMap({ stickId, onLocationUpdate, onStatusChange, onAuthError, onBat
             socket.emit('join', stickId);
         }
 
+        // Track disconnection to show "Restored" toast only on reconnection, not initial load
+        let hasDisconnected = false;
+
+        // Listen for connection events to manage "Reconnecting" state
+        socket.on('connect', () => {
+            if (onReconnecting) onReconnecting(false);
+            
+            if (hasDisconnected) {
+                toast.success("Connection Restored 🟢");
+                hasDisconnected = false;
+            }
+        });
+
+        socket.on('disconnect', () => {
+            hasDisconnected = true;
+            if (onReconnecting) onReconnecting(true);
+            if (onStatusChange) onStatusChange(false); // Immediately show OFFLINE when socket drops
+        });
+
         // Handle connection errors (e.g., authentication failure)
         socket.on('connect_error', (err) => {
+            if (onReconnecting) onReconnecting(true);
+            
             if (err.message === 'Authentication error') {
                 if (onAuthError) onAuthError();
             }
@@ -298,7 +335,8 @@ function LiveMap({ stickId, onLocationUpdate, onStatusChange, onAuthError, onBat
 
         // Listen for real-time updates
         socket.on('locationUpdate', (data) => {
-            if (onStatusChange) onStatusChange(true);
+            lastUpdateTimestampRef.current = Date.now();
+            if (onStatusChange) onStatusChange(true); // Real-time data means it's online
 
             if (data && data.location && data.location.coordinates) {
                 const [lng, lat] = data.location.coordinates;
@@ -316,7 +354,7 @@ function LiveMap({ stickId, onLocationUpdate, onStatusChange, onAuthError, onBat
                 // Append new point to history (Polyline)
                 setPathHistory(prev => [...prev, { lat: newPos.lat, lng: newPos.lng, time: data.timestamp }]);
                 
-                if (onLocationUpdate) onLocationUpdate(timestamp);
+                if (onLocationUpdate) onLocationUpdate(data.timestamp); // Send raw timestamp for calculation
                 if (data.batteryLevel !== undefined && onBatteryUpdate) onBatteryUpdate(data.batteryLevel);
 
                 if (data.emergency) {
@@ -329,22 +367,73 @@ function LiveMap({ stickId, onLocationUpdate, onStatusChange, onAuthError, onBat
         return () => {
             socket.disconnect();
         };
-    }, [stickId, onLocationUpdate, onStatusChange, onAuthError, onBatteryUpdate]);
+    }, [stickId, onLocationUpdate, onStatusChange, onAuthError, onBatteryUpdate, onReconnecting]);
+
+    // --- Effect 3: Watchdog Timer for Offline Detection ---
+    useEffect(() => {
+        const interval = setInterval(() => {
+            const timeSinceLastUpdate = Date.now() - lastUpdateTimestampRef.current;
+            // Consider offline if no data for 60 seconds (ESP32 sends every 10s)
+            if (timeSinceLastUpdate > 60000) {
+                if (onStatusChange) onStatusChange(false);
+            }
+        }, 5000); // Check every 5 seconds
+        return () => clearInterval(interval);
+    }, [onStatusChange]);
 
     // --- 2.5 Advanced Marker Management ---
     useEffect(() => {
         if (mapReady && currentLocation && mapRef.current) {
             const updateMarker = async () => {
-                const { AdvancedMarkerElement } = await google.maps.importLibrary("marker");
+                const { AdvancedMarkerElement, PinElement } = await google.maps.importLibrary("marker");
                 
                 if (!markerRef.current) {
+                    // Create a customized PinElement
+                    const pin = new PinElement({
+                        background: "#e74c3c", // Match your path color (Red)
+                        borderColor: "#c0392b",
+                        glyphColor: "white",
+                        scale: 1.1,
+                    });
+
+                    // Add the pulsing class for CSS animation
+                    pin.element.classList.add('live-marker-pulse');
+
                     markerRef.current = new AdvancedMarkerElement({
                         map: mapRef.current,
                         position: currentLocation.position,
                         title: `Stick ${stickId} - Live Location`,
+                        content: pin.element, // Use the custom pin
                     });
                 } else {
-                    markerRef.current.position = currentLocation.position;
+                    // Smooth Animation Logic
+                    const startPos = markerRef.current.position;
+                    const endPos = currentLocation.position;
+
+                    // Helper to handle both LatLng object and Literal
+                    const getLat = (p) => (typeof p.lat === 'function' ? p.lat() : p.lat);
+                    const getLng = (p) => (typeof p.lng === 'function' ? p.lng() : p.lng);
+
+                    const startLat = getLat(startPos);
+                    const startLng = getLng(startPos);
+
+                    if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
+
+                    const duration = 1000; // 1 second animation
+                    const startTime = performance.now();
+
+                    const animate = (currentTime) => {
+                        const elapsed = currentTime - startTime;
+                        const progress = Math.min(elapsed / duration, 1);
+                        const ease = 1 - Math.pow(1 - progress, 3); // Ease Out Cubic
+
+                        const nextLat = startLat + (endPos.lat - startLat) * ease;
+                        const nextLng = startLng + (endPos.lng - startLng) * ease;
+
+                        if (markerRef.current) markerRef.current.position = { lat: nextLat, lng: nextLng };
+                        if (progress < 1) animationFrameRef.current = requestAnimationFrame(animate);
+                    };
+                    animationFrameRef.current = requestAnimationFrame(animate);
                 }
             };
             updateMarker();
@@ -354,6 +443,9 @@ function LiveMap({ stickId, onLocationUpdate, onStatusChange, onAuthError, onBat
     // Cleanup marker on unmount
     useEffect(() => {
         return () => {
+            if (animationFrameRef.current) {
+                cancelAnimationFrame(animationFrameRef.current);
+            }
             if (markerRef.current) {
                 markerRef.current.map = null;
                 markerRef.current = null;
@@ -412,7 +504,7 @@ function LiveMap({ stickId, onLocationUpdate, onStatusChange, onAuthError, onBat
                         mapTypeId={mapTypeId}
                         setMapTypeId={setMapTypeId}
                         isFollowing={isFollowing}
-                        onResetView={handleResetView}
+                        onToggleFollow={handleToggleFollow}
                         isMobile={isDashboardMobile}
                     />
 
