@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: smart-stick-backend
+    env: node
+    # Points Render to the backend subfolder
+    root: smart-stick-backend
+    # Commands to build and start your app
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production

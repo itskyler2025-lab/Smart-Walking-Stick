@@ -5,6 +5,13 @@ node_modules/
 .DS_Store
 .env
 
+# Security - Prevent accidental commits of keys in root
+*-service-account.json
+
 # IDE Settings
 .idea/
 .vscode/
+
+# Build outputs
+dist/
+build/
