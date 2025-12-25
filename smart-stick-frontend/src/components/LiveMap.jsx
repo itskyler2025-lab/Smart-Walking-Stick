@@ -1,7 +1,7 @@
 // src/components/LiveMap.js
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { GoogleMap, Marker, Polyline, useLoadScript, OverlayView } from '@react-google-maps/api';
+import { GoogleMap, Polyline, useLoadScript, OverlayView } from '@react-google-maps/api';
 import UserInfo from './UserInfo';
 // Import modern icons
 import { FaGlobe, FaSatellite, FaRoad, FaListUl, FaExclamationTriangle, FaLocationArrow } from 'react-icons/fa'; 
@@ -67,6 +67,8 @@ const topContentGridStyle = {
     alignItems: 'stretch',
 };
 
+const libraries = ['marker'];
+
 function LiveMap({ stickId, onLocationUpdate, onStatusChange, onAuthError, onBatteryUpdate }) {
     const [currentLocation, setCurrentLocation] = useState(null);
     const [pathHistory, setPathHistory] = useState([]); 
@@ -80,6 +82,7 @@ function LiveMap({ stickId, onLocationUpdate, onStatusChange, onAuthError, onBat
     const [hoveredMapType, setHoveredMapType] = useState(null);
     const [isRecenterHovered, setIsRecenterHovered] = useState(false);
     const [isClearEmergencyHovered, setIsClearEmergencyHovered] = useState(false);
+    const [mapReady, setMapReady] = useState(false);
     
     const [groupedHistory, setGroupedHistory] = useState({});
     useEffect(() => {
@@ -98,14 +101,17 @@ function LiveMap({ stickId, onLocationUpdate, onStatusChange, onAuthError, onBat
 
     // Reference to the map instance for accessing state (like zoom)
     const mapRef = useRef(null);
+    const markerRef = useRef(null);
+
     const onMapLoad = useCallback((map) => {
         mapRef.current = map;
+        setMapReady(true);
     }, []);
 
     // Load Google Maps script
     const { isLoaded, loadError } = useLoadScript({
         googleMapsApiKey: GOOGLE_MAPS_API_KEY,
-        // The 'marker' library is for AdvancedMarker, not needed for the standard Marker.
+        libraries,
     });
 
     // --- 1. Fetch Latest Location (Real-Time Polling) ---
@@ -299,6 +305,35 @@ function LiveMap({ stickId, onLocationUpdate, onStatusChange, onAuthError, onBat
         };
     }, [stickId, onLocationUpdate, onStatusChange, onAuthError, onBatteryUpdate]);
 
+    // --- 2.5 Advanced Marker Management ---
+    useEffect(() => {
+        if (mapReady && currentLocation && mapRef.current) {
+            const updateMarker = async () => {
+                const { AdvancedMarkerElement } = await google.maps.importLibrary("marker");
+                
+                if (!markerRef.current) {
+                    markerRef.current = new AdvancedMarkerElement({
+                        map: mapRef.current,
+                        position: currentLocation.position,
+                        title: `Stick ${stickId} - Live Location`,
+                    });
+                } else {
+                    markerRef.current.position = currentLocation.position;
+                }
+            };
+            updateMarker();
+        }
+    }, [mapReady, currentLocation, stickId]);
+
+    // Cleanup marker on unmount
+    useEffect(() => {
+        return () => {
+            if (markerRef.current) {
+                markerRef.current.map = null;
+                markerRef.current = null;
+            }
+        };
+    }, []);
 
     // --- 5. Helper Function for Responsive Styles (Top Grid only) ---
     const getResponsiveStyle = (styleName) => {
@@ -473,14 +508,6 @@ function LiveMap({ stickId, onLocationUpdate, onStatusChange, onAuthError, onBat
                                 />
                             )}
                             
-                            {/* 2. Real-time Marker (Current Position) */}
-                            {currentLocation && (
-                                <Marker 
-                                    position={currentLocation.position} 
-                                    title={`Stick ${stickId} - Live Location`}
-                                />
-                            )}
-
                             {/* 3. Emergency Pulse Overlay */}
                             {isEmergency && currentLocation && (
                                 <OverlayView
