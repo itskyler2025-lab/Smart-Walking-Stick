@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { FaUser, FaPencilAlt, FaTimes, FaSave, FaIdCard, FaMapMarkerAlt, FaPhoneAlt, FaTint, FaCalendarAlt, FaVenusMars, FaBriefcaseMedical } from 'react-icons/fa';
 import { TailSpin } from 'react-loader-spinner';
 import api from '../utils/api'; // Import the api utility
+import { toast } from 'react-toastify';
 
 // This maps backend field names to frontend display names
 const fieldDisplayMap = {
@@ -104,10 +105,10 @@ const UserInfo = () => {
             };
             setUserData(updatedProfileData);
             setIsEditing(false);
-            alert("Personal information updated!");
+            toast.success("Personal information updated!");
         } catch (err) {
             const errorMessage = err.response?.data?.msg || "Failed to update information.";
-            alert(errorMessage);
+            toast.error(errorMessage);
             console.error(err);
         } finally {
             setIsSaving(false);

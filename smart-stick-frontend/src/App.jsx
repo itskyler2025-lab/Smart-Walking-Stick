@@ -7,6 +7,9 @@ import Login from './pages/Login';
 import Register from './pages/Register'; 
 import ResetPassword from './pages/ResetPassword';
 import { FaRegClock, FaUnlink } from 'react-icons/fa';
+import { requestForToken } from './utils/firebase'; // Import the new function
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 // --- Auth Wrapper for Login/Register ---
 const AuthWrapper = ({ children }) => (
@@ -48,6 +51,14 @@ function App() {
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  // Effect to handle Push Notification setup
+  useEffect(() => {
+    if (isAuthenticated) {
+      // Request permission and get token
+      requestForToken();
+    }
+  }, [isAuthenticated]);
 
   const handleLogin = (token, id) => {
     localStorage.setItem('token', token);
@@ -182,6 +193,17 @@ function App() {
           </div>
         </header>
         <LiveMap stickId={stickId} onLocationUpdate={setLastUpdate} onStatusChange={setIsLive} onAuthError={handleLogout} onBatteryUpdate={setBatteryLevel} />
+        <ToastContainer 
+          position="bottom-right"
+          autoClose={5000}
+          hideProgressBar={false}
+          newestOnTop={false}
+          closeOnClick
+          rtl={false}
+          pauseOnFocus
+          draggable
+          theme="dark"
+        />
       </div>
     );
 

@@ -3,11 +3,14 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { GoogleMap, Polyline, useLoadScript, OverlayView } from '@react-google-maps/api';
 import UserInfo from './UserInfo';
-// Import modern icons
-import { FaGlobe, FaSatellite, FaRoad, FaListUl, FaExclamationTriangle, FaLocationArrow } from 'react-icons/fa'; 
 import { GOOGLE_MAPS_API_KEY, API_URL } from '../utils/config';
 import { io } from 'socket.io-client';
 import api from '../utils/api';
+import { toast } from 'react-toastify';
+
+import EmergencyBanner from './EmergencyBanner';
+import MapControls from './MapControls';
+import LocationHistory from './LocationHistory';
 
 // ===================================================
 // CONFIGURATION
@@ -82,9 +85,6 @@ function LiveMap({ stickId, onLocationUpdate, onStatusChange, onAuthError, onBat
     const [mapZoom, setMapZoom] = useState(18);
     const [windowWidth, setWindowWidth] = useState(window.innerWidth);
     const [isFollowing, setIsFollowing] = useState(true);
-    const [hoveredMapType, setHoveredMapType] = useState(null);
-    const [isRecenterHovered, setIsRecenterHovered] = useState(false);
-    const [isClearEmergencyHovered, setIsClearEmergencyHovered] = useState(false);
     const [mapReady, setMapReady] = useState(false);
     
     const [groupedHistory, setGroupedHistory] = useState({});
@@ -96,7 +96,12 @@ function LiveMap({ stickId, onLocationUpdate, onStatusChange, onAuthError, onBat
 
     // Debug: Check if Map ID is loaded
     useEffect(() => {
-        if (!MAP_ID) console.error("❌ Map ID is missing. Ensure VITE_GOOGLE_MAPS_MAP_ID is set in Vercel Environment Variables and REDEPLOY.");
+        if (!MAP_ID) {
+            console.error("❌ Map ID is undefined. Troubleshooting:");
+            console.error("1. Vercel Env Var must be named EXACTLY 'VITE_GOOGLE_MAPS_MAP_ID'.");
+            console.error("2. Did you click 'Redeploy' after adding the variable?");
+            console.error("3. Try a Hard Refresh (Ctrl+F5) to clear browser cache.");
+        }
     }, []);
 
     const isDashboardMobile = windowWidth < DASHBOARD_BREAKPOINT;
@@ -200,9 +205,10 @@ function LiveMap({ stickId, onLocationUpdate, onStatusChange, onAuthError, onBat
         try {
             await api.post('/api/emergency/clear');
             setIsEmergency(false); 
+            toast.success("Emergency status cleared.");
         } catch (error) {
             console.error("Error clearing emergency:", error);
-            alert("Failed to clear emergency status. Please try again.");
+            toast.error("Failed to clear emergency status. Please try again.");
         }
     };
 
@@ -367,48 +373,11 @@ function LiveMap({ stickId, onLocationUpdate, onStatusChange, onAuthError, onBat
     return (
         <div style={dashboardStyles}>
             
-            {/* EMERGENCY BANNER */}
-            {isEmergency && (
-                <div style={{
-                    backgroundColor: '#e74c3c',
-                    color: 'white',
-                    padding: '15px 25px',
-                    borderRadius: '8px',
-                    marginBottom: '25px',
-                    display: 'flex',
-                    flexDirection: isDashboardMobile ? 'column' : 'row',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    gap: '15px',
-                    boxShadow: '0 4px 15px rgba(231, 76, 60, 0.4)',
-                    animation: 'emergency-pulse 2s infinite'
-                }}>
-                    <div style={{ display: 'flex', alignItems: 'center', fontSize: '1.2em', fontWeight: 'bold' }}>
-                        <FaExclamationTriangle style={{ marginRight: '15px', fontSize: '1.5em' }} />
-                        <span>EMERGENCY ALERT: Panic Button Pressed!</span>
-                    </div>
-                    <button 
-                        onClick={handleClearEmergency}
-                        onMouseEnter={() => setIsClearEmergencyHovered(true)}
-                        onMouseLeave={() => setIsClearEmergencyHovered(false)}
-                        style={{
-                            backgroundColor: isClearEmergencyHovered ? '#f1f1f1' : 'white',
-                            color: '#e74c3c',
-                            border: 'none',
-                            padding: '10px 25px',
-                            borderRadius: '5px',
-                            fontWeight: 'bold',
-                            cursor: 'pointer',
-                            fontSize: '1em',
-                            whiteSpace: 'nowrap',
-                            transition: 'background-color 0.3s ease, box-shadow 0.3s ease',
-                            boxShadow: isClearEmergencyHovered ? '0 4px 8px rgba(0,0,0,0.2)' : 'none'
-                        }}
-                    >
-                        Clear Emergency
-                    </button>
-                </div>
-            )}
+            <EmergencyBanner 
+                isEmergency={isEmergency} 
+                onClear={handleClearEmergency} 
+                isMobile={isDashboardMobile} 
+            />
             
             {/* 1. TOP ROW: Info and Live Map (Responsive Grid/Flex) */}
             <div style={getResponsiveStyle('topGrid')}>
@@ -427,62 +396,13 @@ function LiveMap({ stickId, onLocationUpdate, onStatusChange, onAuthError, onBat
                 {/* RIGHT COLUMN: Live Map & Controls */}
                 <div style={{ minWidth: 0, width: '100%', display: 'flex', flexDirection: 'column' }}>
                     
-                    {/* Map Type Controls (Responsive Flexbox) */}
-                    <div style={{ 
-                        marginBottom: '15px', 
-                        display: 'flex', 
-                        justifyContent: isDashboardMobile ? 'space-around' : 'flex-start',
-                        gap: isDashboardMobile ? '0' : '10px',
-                        flexWrap: 'wrap',
-                    }}>
-                        {['roadmap', 'hybrid', 'satellite'].map(type => (
-                            <button 
-                                key={type}
-                                onClick={() => setMapTypeId(type)} 
-                                onMouseEnter={() => setHoveredMapType(type)}
-                                onMouseLeave={() => setHoveredMapType(null)}
-                                style={{
-                                    padding: '8px 18px', 
-                                    backgroundColor: mapTypeId === type ? '#00ADB5' : (hoveredMapType === type ? '#393E46' : '#222831'), 
-                                    color: mapTypeId === type ? 'white' : '#EEEEEE', 
-                                    border: '1px solid #00ADB5', 
-                                    borderRadius: '5px', 
-                                    cursor: 'pointer',
-                                    fontWeight: '600',
-                                    transition: 'all 0.3s ease',
-                                    boxShadow: (mapTypeId === type || hoveredMapType === type) ? '0 4px 8px rgba(0, 173, 181, 0.4)' : 'none',
-                                    flex: isDashboardMobile ? '1 1 auto' : '0 0 auto', 
-                                    minWidth: isDashboardMobile ? '100px' : 'auto',
-                                }}>
-                                {type === 'roadmap' && <FaRoad style={{ marginRight: '6px' }} />}
-                                {type === 'hybrid' && <FaGlobe style={{ marginRight: '6px' }} />}
-                                {type === 'satellite' && <FaSatellite style={{ marginRight: '6px' }} />}
-                                {type.charAt(0).toUpperCase() + type.slice(1)}
-                            </button>
-                        ))}
-
-                        {/* Reset View Button */}
-                        <button 
-                            onClick={handleResetView}
-                            onMouseEnter={() => setIsRecenterHovered(true)}
-                            onMouseLeave={() => setIsRecenterHovered(false)}
-                            style={{
-                                padding: '8px 18px', 
-                                backgroundColor: isFollowing ? '#00ADB5' : (isRecenterHovered ? '#008C9E' : '#222831'), 
-                                color: isFollowing ? 'white' : '#00ADB5', 
-                                border: '1px solid #00ADB5', 
-                                borderRadius: '5px', 
-                                cursor: 'pointer',
-                                fontWeight: '600',
-                                transition: 'all 0.3s ease',
-                                boxShadow: (isFollowing || isRecenterHovered) ? '0 4px 8px rgba(0, 173, 181, 0.4)' : 'none',
-                                flex: isDashboardMobile ? '1 1 auto' : '0 0 auto', 
-                                minWidth: isDashboardMobile ? '100px' : 'auto',
-                                marginLeft: isDashboardMobile ? '0' : 'auto'
-                            }}>
-                            <FaLocationArrow style={{ marginRight: '6px' }} /> {isFollowing ? 'Following' : 'Recenter'}
-                        </button>
-                    </div>
+                    <MapControls 
+                        mapTypeId={mapTypeId}
+                        setMapTypeId={setMapTypeId}
+                        isFollowing={isFollowing}
+                        onResetView={handleResetView}
+                        isMobile={isDashboardMobile}
+                    />
 
                     {/* Map Container */}
                 <div style={{ boxShadow: '0 6px 20px rgba(0,0,0,0.15)', borderRadius: '10px', overflow: 'hidden', flex: 1, minHeight: '55vh', display: 'flex', flexDirection: 'column' }}>
@@ -544,76 +464,10 @@ function LiveMap({ stickId, onLocationUpdate, onStatusChange, onAuthError, onBat
             </div>
             
             {/* 2. BOTTOM ROW: Location History List (FULL WIDTH) */}
-            <div style={{ minWidth: 0, marginTop: '15px', width: '100%' }}> 
-                <div style={{ 
-                    padding: '15px', // Reduced padding
-                    backgroundColor: '#393E46', 
-                    color: '#EEEEEE',
-                    borderRadius: '10px', 
-                    boxShadow: '0 4px 15px rgba(0,0,0,0.1)',
-                }}>
-                    <h3 style={{ 
-                        borderBottom: '2px solid #e74c3c', 
-                        paddingBottom: '10px', 
-                        color: '#EEEEEE', 
-                        marginBottom: '15px', 
-                        fontSize: '1.4em',
-                        fontWeight: '600'
-                    }}>
-                        <FaListUl style={{ marginRight: '10px', verticalAlign: 'middle', color: '#e74c3c' }} /> Location History
-                    </h3>
-
-                    {pathHistory.length === 0 && (
-                        <p style={{ color: '#EEEEEE', opacity: 0.7 }}>No historical data available yet. Ensure the ESP32 is sending data.</p>
-                    )}
-                    
-                    {/* History List Container (Scrollable) */}
-                    <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
-                        <ul style={{ listStyleType: 'none', padding: 0, margin: 0 }}>
-                            {/* Sort dates in descending order and map over them */}
-                            {Object.keys(groupedHistory).sort().reverse().map(dateKey => (
-                                <li key={dateKey}>
-                                    <h4 style={{
-                                        color: '#EEEEEE',
-                                        backgroundColor: '#222831',
-                                        padding: '8px 10px',
-                                        margin: '10px 0 5px 0',
-                                        borderRadius: '4px',
-                                        fontSize: '1.1em',
-                                        fontWeight: 'bold',
-                                        position: 'sticky', // Makes the date header stick to the top on scroll
-                                        top: 0,
-                                        zIndex: 1,
-                                        borderBottom: '1px solid #00ADB5'
-                                    }}>
-                                        {new Date(dateKey + 'T00:00:00').toLocaleDateString('en-US', { // Add time to avoid timezone issues
-                                            weekday: 'long',
-                                            year: 'numeric',
-                                            month: 'long',
-                                            day: 'numeric'
-                                        })}
-                                    </h4>
-                                    <ul style={{ listStyleType: 'none', paddingLeft: '15px' }}>
-                                        {/* Display points for each date in reverse chronological order */}
-                                        {groupedHistory[dateKey].slice().reverse().map((point, index) => (
-                                            <li key={`${dateKey}-${index}`} style={{ 
-                                                padding: '8px 0', 
-                                                borderBottom: '1px dotted #4a5568', 
-                                                fontSize: '0.9em',
-                                                color: '#EEEEEE',
-                                            }}>
-                                                <strong style={{ color: '#00ADB5' }}>Time:</strong> {new Date(point.time).toLocaleTimeString('en-US')}
-                                                <br />
-                                                <span style={{ opacity: 0.8 }}>Lat: {point.lat.toFixed(4)}, Lon: {point.lng.toFixed(4)}</span>
-                                            </li>
-                                        ))}
-                                    </ul>
-                                </li>
-                            ))}
-                        </ul>
-                    </div>
-                </div>
-            </div>
+            <LocationHistory 
+                groupedHistory={groupedHistory} 
+                hasHistory={pathHistory.length > 0} 
+            />
         </div>
     );
 }

@@ -5,6 +5,7 @@ import { TailSpin } from 'react-loader-spinner'; // Import the loader
 import { FaUserPlus } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
 import api from '../utils/api';
+import { toast } from 'react-toastify';
 
 function Register({ onRegisterSuccess }) {
   const [username, setUsername] = useState('');
@@ -24,7 +25,7 @@ function Register({ onRegisterSuccess }) {
       setLoading(true);
       await api.post('/api/auth/register', { username, email, password, stickId });
 
-      alert('Registration successful! Please log in.');
+      toast.success('Registration successful! Please log in.');
       onRegisterSuccess(); 
 
     } catch (err) {

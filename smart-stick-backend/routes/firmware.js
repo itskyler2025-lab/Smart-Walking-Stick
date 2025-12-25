@@ -16,7 +16,8 @@ const FIRMWARE_PATH = path.join(__dirname, '..', 'firmware', 'firmware.bin');
 // GET /api/firmware/update
 router.get('/update', (req, res) => {
     // 1. Security Check: Verify API Key from ESP32 headers
-    const apiKey = req.header('Authorization'); // httpUpdate sends it as the 'Authorization' header
+    // httpUpdate sends it as 'Authorization', but we also check 'x-api-key' for consistency
+    const apiKey = req.header('Authorization') || req.header('x-api-key'); 
     if (!process.env.ESP32_API_KEY || apiKey !== process.env.ESP32_API_KEY) {
         return res.status(401).json({ message: 'Unauthorized: Invalid API Key' });
     }
