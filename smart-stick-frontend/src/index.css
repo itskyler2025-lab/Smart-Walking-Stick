@@ -1,0 +1,70 @@
+body {
+  margin: 0;
+  /* Use a more modern font stack consistent with other components */
+  font-family: "Avenir Next", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+
+  /* Dark Palette Background */
+  background: linear-gradient(135deg, #222831 0%, #393E46 100%);
+  background-attachment: fixed;
+  color: #EEEEEE;
+  min-height: 100vh;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
+}
+
+/* Live Status Pulse Animation */
+@keyframes live-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(46, 204, 113, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 6px rgba(46, 204, 113, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(46, 204, 113, 0);
+  }
+}
+
+.live-pulse {
+  animation: live-pulse 2s infinite;
+}
+
+/* Emergency Alert Pulse Animation */
+@keyframes emergency-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(231, 76, 60, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(231, 76, 60, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(231, 76, 60, 0);
+  }
+}
+
+/* Map Pulse Animation for Emergency */
+@keyframes map-pulse-ring {
+  0% {
+    transform: translate(-50%, -50%) scale(0.1);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(2.0);
+    opacity: 0;
+  }
+}
+
+.emergency-map-pulse {
+  position: absolute;
+  width: 150px;
+  height: 150px;
+  background-color: rgba(231, 76, 60, 0.5); /* Red with transparency */
+  border-radius: 50%;
+  animation: map-pulse-ring 2s infinite;
+  pointer-events: none; /* Allow clicks to pass through to the map */
+}

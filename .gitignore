@@ -1,0 +1,10 @@
+SmartStickNative/
+
+# Standard ignores
+node_modules/
+.DS_Store
+.env
+
+# IDE Settings
+.idea/
+.vscode/

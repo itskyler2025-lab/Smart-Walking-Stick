@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Emergency Alert</title>
+</head>
+<body style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #f9f9f9; padding: 40px 20px; border-radius: 5px;">
+    <div style="background-color: #ffffff; padding: 40px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
+        <div style="text-align: center; border-bottom: 1px solid #eeeeee; padding-bottom: 30px; margin-bottom: 30px;">
+            <h1 style="color: #e74c3c; margin: 0; font-size: 28px; letter-spacing: 1px;">🚨 EMERGENCY ALERT</h1>
+            <p style="color: #7f8c8d; margin: 10px 0 0; font-size: 16px;">Panic Button Activated</p>
+        </div>
+        
+        <p style="font-size: 16px; color: #2c3e50; line-height: 1.6; margin-bottom: 20px;">
+            This is an automated notification to inform you that the emergency panic button on Smart Stick <strong>{{stickId}}</strong> was pressed.
+        </p>
+        
+        <div style="background-color: #fdf2f2; border-left: 4px solid #e74c3c; padding: 20px; margin: 30px 0; border-radius: 4px;">
+            <p style="margin: 0 0 10px 0; color: #c0392b; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; font-weight: bold;">Incident Details</p>
+            <p style="margin: 5px 0; color: #34495e;"><strong>Time:</strong> {{time}}</p>
+            <p style="margin: 5px 0; color: #34495e;"><strong>Latitude:</strong> {{lat}}</p>
+            <p style="margin: 5px 0; color: #34495e;"><strong>Longitude:</strong> {{lng}}</p>
+        </div>
+
+        <div style="text-align: center; margin-top: 40px; margin-bottom: 20px;">
+            <a href="{{mapLink}}" style="background-color: #e74c3c; color: #ffffff; padding: 14px 30px; text-decoration: none; border-radius: 50px; font-weight: bold; font-size: 16px; display: inline-block; box-shadow: 0 4px 6px rgba(231, 76, 60, 0.3); transition: background-color 0.3s;">
+                View Location on Google Maps
+            </a>
+        </div>
+    </div>
+</body>
+</html>

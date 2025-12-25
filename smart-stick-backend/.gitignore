@@ -1,0 +1,27 @@
+# Dependencies
+/node_modules
+
+# Environment variables
+# This file contains secrets and should NOT be committed.
+.env
+.firebase-service-account.json
+.env.local
+.env.*.local
+# Catch-all for other service account keys
+*-service-account.json
+
+# Security keys and certificates
+*.pem
+*.key
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE Settings (may contain launch configurations with secrets)
+.idea/
+.vscode/
