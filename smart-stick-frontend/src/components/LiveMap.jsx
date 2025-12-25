@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { GoogleMap, Polyline, useLoadScript, OverlayView } from '@react-google-maps/api';
 import UserInfo from './UserInfo';
-import { GOOGLE_MAPS_API_KEY, API_URL } from '../utils/config';
+import { GOOGLE_MAPS_API_KEY, API_URL, GOOGLE_MAPS_MAP_ID } from '../utils/config';
 import { io } from 'socket.io-client';
 import api from '../utils/api';
 import { toast } from 'react-toastify';
@@ -72,9 +72,6 @@ const topContentGridStyle = {
 
 const libraries = ['marker'];
 
-// Access Map ID directly to ensure it loads from Vite env
-const MAP_ID = import.meta.env.VITE_GOOGLE_MAPS_MAP_ID;
-
 function LiveMap({ stickId, onLocationUpdate, onStatusChange, onAuthError, onBatteryUpdate }) {
     const [currentLocation, setCurrentLocation] = useState(null);
     const [pathHistory, setPathHistory] = useState([]); 
@@ -96,7 +93,7 @@ function LiveMap({ stickId, onLocationUpdate, onStatusChange, onAuthError, onBat
 
     // Debug: Check if Map ID is loaded
     useEffect(() => {
-        if (!MAP_ID) {
+        if (!GOOGLE_MAPS_MAP_ID) {
             console.error("❌ Map ID is undefined. Troubleshooting:");
             console.error("1. Vercel Env Var must be named EXACTLY 'VITE_GOOGLE_MAPS_MAP_ID'.");
             console.error("2. Did you click 'Redeploy' after adding the variable?");
@@ -407,7 +404,7 @@ function LiveMap({ stickId, onLocationUpdate, onStatusChange, onAuthError, onBat
                     {/* Map Container */}
                 <div style={{ boxShadow: '0 6px 20px rgba(0,0,0,0.15)', borderRadius: '10px', overflow: 'hidden', flex: 1, minHeight: '55vh', display: 'flex', flexDirection: 'column' }}>
                         <GoogleMap
-                        mapId={MAP_ID}
+                        mapId={GOOGLE_MAPS_MAP_ID}
                         mapContainerStyle={{ width: '100%', height: '100%', flex: 1 }}
                             center={mapCenter}
                             zoom={mapZoom}
@@ -419,6 +416,7 @@ function LiveMap({ stickId, onLocationUpdate, onStatusChange, onAuthError, onBat
                                 }
                             }}
                             options={{ 
+                                mapId: GOOGLE_MAPS_MAP_ID,
                                 mapTypeId: mapTypeId, 
                                 disableDefaultUI: true, 
                                 zoomControl: true,
