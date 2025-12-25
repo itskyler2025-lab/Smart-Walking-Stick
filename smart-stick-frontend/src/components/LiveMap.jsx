@@ -5,7 +5,7 @@ import { GoogleMap, Polyline, useLoadScript, OverlayView } from '@react-google-m
 import UserInfo from './UserInfo';
 // Import modern icons
 import { FaGlobe, FaSatellite, FaRoad, FaListUl, FaExclamationTriangle, FaLocationArrow } from 'react-icons/fa'; 
-import { GOOGLE_MAPS_API_KEY, API_URL, GOOGLE_MAPS_MAP_ID } from '../utils/config';
+import { GOOGLE_MAPS_API_KEY, API_URL } from '../utils/config';
 import { io } from 'socket.io-client';
 import api from '../utils/api';
 
@@ -69,6 +69,9 @@ const topContentGridStyle = {
 
 const libraries = ['marker'];
 
+// Access Map ID directly to ensure it loads from Vite env
+const MAP_ID = import.meta.env.VITE_GOOGLE_MAPS_MAP_ID;
+
 function LiveMap({ stickId, onLocationUpdate, onStatusChange, onAuthError, onBatteryUpdate }) {
     const [currentLocation, setCurrentLocation] = useState(null);
     const [pathHistory, setPathHistory] = useState([]); 
@@ -89,6 +92,11 @@ function LiveMap({ stickId, onLocationUpdate, onStatusChange, onAuthError, onBat
         const handleResize = () => setWindowWidth(window.innerWidth);
         window.addEventListener('resize', handleResize);
         return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
+    // Debug: Check if Map ID is loaded
+    useEffect(() => {
+        if (!MAP_ID) console.error("❌ Map ID is missing. Check .env file and restart server.");
     }, []);
 
     const isDashboardMobile = windowWidth < DASHBOARD_BREAKPOINT;
@@ -479,7 +487,7 @@ function LiveMap({ stickId, onLocationUpdate, onStatusChange, onAuthError, onBat
                     {/* Map Container */}
                 <div style={{ boxShadow: '0 6px 20px rgba(0,0,0,0.15)', borderRadius: '10px', overflow: 'hidden', flex: 1, minHeight: '55vh', display: 'flex', flexDirection: 'column' }}>
                         <GoogleMap
-                        mapId={GOOGLE_MAPS_MAP_ID}
+                        mapId={MAP_ID}
                         mapContainerStyle={{ width: '100%', height: '100%', flex: 1 }}
                             center={mapCenter}
                             zoom={mapZoom}

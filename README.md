@@ -151,7 +151,7 @@ The project is composed of three main parts that work in concert:
     ```env
     VITE_API_URL=http://localhost:5000
     VITE_GOOGLE_MAPS_API_KEY=your_google_maps_api_key
-    VITE_GOOGLE_MAPS_MAP_ID=your_google_maps_map_id # Optional, for custom map styling
+    VITE_GOOGLE_MAPS_MAP_ID=your_google_maps_map_id # Required for Advanced Markers
     ```
 4.  Start the React app:
     ```bash
