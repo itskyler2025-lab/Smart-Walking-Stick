@@ -96,7 +96,7 @@ function LiveMap({ stickId, onLocationUpdate, onStatusChange, onAuthError, onBat
 
     // Debug: Check if Map ID is loaded
     useEffect(() => {
-        if (!MAP_ID) console.error("❌ Map ID is missing. Check .env file and restart server.");
+        if (!MAP_ID) console.error("❌ Map ID is missing. Ensure VITE_GOOGLE_MAPS_MAP_ID is set in Vercel Environment Variables and REDEPLOY.");
     }, []);
 
     const isDashboardMobile = windowWidth < DASHBOARD_BREAKPOINT;
