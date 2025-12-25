@@ -1,7 +1,7 @@
 // src/utils/firebase.js
 import { initializeApp } from 'firebase/app';
 import { getMessaging, getToken, onMessage } from 'firebase/messaging';
-import { firebaseConfig, VAPID_KEY } from '../firebaseConfig';
+import { firebaseConfig, VAPID_KEY } from './firebaseConfig';
 import api from './api';
 
 // Initialize Firebase
