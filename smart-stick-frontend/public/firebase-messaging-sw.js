@@ -6,16 +6,19 @@
 importScripts('https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js');
 importScripts('https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging-compat.js');
 
-// IMPORTANT:
-// You must copy your Firebase config from `src/firebaseConfig.js` here.
-// Environment variables are not available in the service worker, so this is a required duplication.
+// =========================================================================================
+// CRITICAL: YOU MUST REPLACE THESE PLACEHOLDER VALUES WITH YOUR ACTUAL FIREBASE CONFIG
+// =========================================================================================
+// This service worker file runs in the browser and cannot access environment variables.
+// You must manually copy the configuration values from your Firebase project settings here.
+// These values are public and are safe to be included in this file.
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT_ID.appspot.com",
-  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-  appId: "YOUR_APP_ID"
+  apiKey: "REPLACE_WITH_YOUR_FIREBASE_API_KEY",
+  authDomain: "REPLACE_WITH_YOUR_FIREBASE_AUTH_DOMAIN",
+  projectId: "REPLACE_WITH_YOUR_FIREBASE_PROJECT_ID",
+  storageBucket: "REPLACE_WITH_YOUR_FIREBASE_STORAGE_BUCKET",
+  messagingSenderId: "REPLACE_WITH_YOUR_FIREBASE_MESSAGING_SENDER_ID",
+  appId: "REPLACE_WITH_YOUR_FIREBASE_APP_ID"
 };
 
 // Initialize the Firebase app in the service worker

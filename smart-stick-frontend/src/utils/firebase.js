@@ -1,7 +1,7 @@
 // src/utils/firebase.js
 import { initializeApp } from 'firebase/app';
 import { getMessaging, getToken, onMessage } from 'firebase/messaging';
-import { firebaseConfig } from '../firebaseConfig';
+import { firebaseConfig, VAPID_KEY } from '../firebaseConfig';
 import api from './api';
 
 // Initialize Firebase
@@ -15,11 +15,9 @@ export const requestForToken = async () => {
       console.log('Notification permission granted.');
       
       // Get the token
-      // IMPORTANT: Go to Firebase Console > Project Settings > Cloud Messaging > Web configuration
-      // and generate a "VAPID key" pair. Paste the public key here.
-      const currentToken = await getToken(messaging, { 
-        vapidKey: 'YOUR_VAPID_KEY_FROM_FIREBASE_SETTINGS'
-      });
+      // IMPORTANT: Go to Firebase Console > Project Settings > Cloud Messaging > Web configuration.
+      // Generate a "VAPID key" pair and set it as VITE_FIREBASE_VAPID_KEY in your .env file.
+      const currentToken = await getToken(messaging, { vapidKey: VAPID_KEY });
 
       if (currentToken) {
         console.log('FCM Token:', currentToken);
