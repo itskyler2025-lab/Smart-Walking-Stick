@@ -38,6 +38,7 @@ app.use((req, res, next) => {
 // This restricts API access to your frontend's URL.
 const allowedOrigins = [
     'http://localhost:3000',
+    'http://localhost:5173',
     'https://smart-walking-stick-alpha.vercel.app', // Your new Vercel deployment
     'https://smart-walking-stick-iota.vercel.app',
     process.env.FRONTEND_URL

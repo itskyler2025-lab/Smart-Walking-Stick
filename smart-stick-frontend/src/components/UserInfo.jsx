@@ -1,7 +1,7 @@
 // src/components/UserInfo.js
 
 import React, { useState, useEffect } from 'react';
-import { FaUser, FaPencilAlt, FaTimes, FaSave, FaIdCard, FaMapMarkerAlt, FaPhoneAlt, FaTint, FaCalendarAlt, FaVenusMars, FaBriefcaseMedical, FaCamera, FaLock, FaEnvelope } from 'react-icons/fa';
+import { FaUser, FaPencilAlt, FaTimes, FaSave, FaIdCard, FaMapMarkerAlt, FaPhoneAlt, FaTint, FaCalendarAlt, FaVenusMars, FaBriefcaseMedical, FaCamera, FaLock, FaEnvelope, FaBars, FaSignOutAlt } from 'react-icons/fa';
 import { TailSpin } from 'react-loader-spinner';
 import api from '../utils/api'; // Import the api utility
 import { toast } from 'react-toastify';
@@ -42,6 +42,7 @@ const UserInfo = () => {
     const [isSaving, setIsSaving] = useState(false);
     const [error, setError] = useState('');
     const [activeTab, setActiveTab] = useState('profile'); // 'profile', 'edit', 'password', 'email'
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [form, setForm] = useState({});
     const [passwordForm, setPasswordForm] = useState({
         currentPassword: '',
@@ -228,6 +229,10 @@ const UserInfo = () => {
         document.getElementById('profileImageInput').click();
     };
 
+    const handleLogout = () => {
+        localStorage.removeItem('token');
+        window.location.reload();
+    };
 
     const saveButtonStyle = {
         padding: '10px 25px',
@@ -265,9 +270,9 @@ const UserInfo = () => {
         border: 'none',
         borderRadius: '5px',
         cursor: 'pointer',
-        marginBottom: isSmallMobile ? '0' : '5px',
+        marginBottom: '5px',
         textAlign: 'left',
-        width: isSmallMobile ? 'auto' : '100%',
+        width: '100%',
         transition: 'all 0.2s',
         fontSize: '0.95em',
         fontWeight: isActive ? 'bold' : 'normal',
@@ -285,7 +290,7 @@ const UserInfo = () => {
     return (
         <div style={{ 
             display: 'flex',
-            flexDirection: isSmallMobile ? 'column' : 'row',
+            flexDirection: 'column',
             backgroundColor: '#393E46', 
             color: '#EEEEEE',
             borderRadius: '10px', 
@@ -294,43 +299,66 @@ const UserInfo = () => {
             minHeight: '500px',
             overflow: 'hidden'
         }}>
-            {/* Navigation Sidebar/Topbar */}
+            {/* Top Nav Bar */}
             <div style={{
-                width: isSmallMobile ? '100%' : '240px',
                 backgroundColor: '#222831',
-                padding: '20px',
+                padding: '15px 20px',
                 display: 'flex',
-                flexDirection: isSmallMobile ? 'row' : 'column',
-                gap: '10px',
-                borderRight: isSmallMobile ? 'none' : '1px solid #00ADB5',
-                borderBottom: isSmallMobile ? '1px solid #00ADB5' : 'none',
-                overflowX: isSmallMobile ? 'auto' : 'visible'
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                borderBottom: '1px solid #00ADB5'
             }}>
-                {/* Profile Image in Sidebar (Desktop) */}
-                {!isSmallMobile && (
-                    <div style={{ textAlign: 'center', marginBottom: '20px' }}>
-                        <img 
-                            src={userData.profileImage || 'https://via.placeholder.com/150'} 
-                            alt="Profile" 
-                            style={{ width: '80px', height: '80px', borderRadius: '50%', objectFit: 'cover', border: '2px solid #00ADB5' }} 
-                        />
-                        <div style={{ marginTop: '10px', fontWeight: 'bold', fontSize: '0.9em' }}>{userData.fullName || 'User'}</div>
-                    </div>
-                )}
-
-                <button onClick={() => setActiveTab('profile')} style={navButtonStyle(activeTab === 'profile')}>
-                    <FaUser style={{ marginRight: '10px' }} /> Profile
-                </button>
-                <button onClick={() => { setForm(userData); setActiveTab('edit'); }} style={navButtonStyle(activeTab === 'edit')}>
-                    <FaPencilAlt style={{ marginRight: '10px' }} /> Edit Info
-                </button>
-                <button onClick={() => setActiveTab('email')} style={navButtonStyle(activeTab === 'email')}>
-                    <FaEnvelope style={{ marginRight: '10px' }} /> Edit Email
-                </button>
-                <button onClick={() => setActiveTab('password')} style={navButtonStyle(activeTab === 'password')}>
-                    <FaLock style={{ marginRight: '10px' }} /> Password
+                <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                    <img 
+                        src={userData.profileImage || 'https://via.placeholder.com/150'} 
+                        alt="Profile" 
+                        style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover', border: '2px solid #00ADB5' }} 
+                    />
+                    <span style={{ fontWeight: 'bold', fontSize: '1.1em' }}>{userData.fullName || 'User'}</span>
+                </div>
+                <button 
+                    onClick={() => setIsMenuOpen(!isMenuOpen)}
+                    style={{
+                        background: 'transparent',
+                        border: 'none',
+                        color: '#00ADB5',
+                        fontSize: '1.5em',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center'
+                    }}
+                >
+                    {isMenuOpen ? <FaTimes /> : <FaBars />}
                 </button>
             </div>
+
+            {/* Dropdown Menu */}
+            {isMenuOpen && (
+                <div style={{
+                    backgroundColor: '#2C3139',
+                    padding: '15px',
+                    borderBottom: '1px solid #393E46',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '5px'
+                }}>
+                    <button onClick={() => { setActiveTab('profile'); setIsMenuOpen(false); }} style={navButtonStyle(activeTab === 'profile')}>
+                    <FaUser style={{ marginRight: '10px' }} /> Profile
+                </button>
+                    <button onClick={() => { setForm(userData); setActiveTab('edit'); setIsMenuOpen(false); }} style={navButtonStyle(activeTab === 'edit')}>
+                    <FaPencilAlt style={{ marginRight: '10px' }} /> Edit Info
+                </button>
+                    <button onClick={() => { setActiveTab('email'); setIsMenuOpen(false); }} style={navButtonStyle(activeTab === 'email')}>
+                    <FaEnvelope style={{ marginRight: '10px' }} /> Edit Email
+                </button>
+                    <button onClick={() => { setActiveTab('password'); setIsMenuOpen(false); }} style={navButtonStyle(activeTab === 'password')}>
+                    <FaLock style={{ marginRight: '10px' }} /> Password
+                </button>
+                <button onClick={handleLogout} style={{ ...navButtonStyle(false), color: '#ff6b6b', borderTop: '1px solid #393E46', marginTop: '5px', paddingTop: '15px' }}>
+                    <FaSignOutAlt style={{ marginRight: '10px' }} /> Logout
+                </button>
+            </div>
+            )}
 
             {/* Main Content Area */}
             <div style={{ flex: 1, padding: '20px', overflowY: 'auto' }}>
