@@ -304,18 +304,10 @@ const UserInfo = () => {
                 backgroundColor: '#222831',
                 padding: '15px 20px',
                 display: 'flex',
-                justifyContent: 'space-between',
+                justifyContent: 'flex-end',
                 alignItems: 'center',
                 borderBottom: '1px solid #00ADB5'
             }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-                    <img 
-                        src={userData.profileImage || 'https://via.placeholder.com/150'} 
-                        alt="Profile" 
-                        style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover', border: '2px solid #00ADB5' }} 
-                    />
-                    <span style={{ fontWeight: 'bold', fontSize: '1.1em' }}>{userData.fullName || 'User'}</span>
-                </div>
                 <button 
                     onClick={() => setIsMenuOpen(!isMenuOpen)}
                     style={{
