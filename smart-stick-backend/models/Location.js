@@ -22,6 +22,10 @@ const LocationSchema = new mongoose.Schema({
     batteryLevel: {
         type: Number
     },
+    isCharging: {
+        type: Boolean,
+        default: false
+    },
     obstacleDetected: {
         type: Boolean,
         default: false

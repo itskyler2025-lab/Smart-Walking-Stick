@@ -19,9 +19,9 @@ module.exports = function(io) {
                 return res.status(401).json({ message: 'Unauthorized: Invalid API Key' });
             }
 
-            const { stickId, latitude, longitude, batteryLevel, obstacleDetected, emergency } = req.body;
+            const { stickId, latitude, longitude, batteryLevel, isCharging, obstacleDetected, emergency } = req.body;
             
-            console.log(`[DATA RECEIVED] Stick: ${stickId} | Lat: ${latitude} | Lng: ${longitude} | Bat: ${batteryLevel}%`);
+            console.log(`[DATA RECEIVED] Stick: ${stickId} | Lat: ${latitude} | Lng: ${longitude} | Bat: ${batteryLevel}% | Chg: ${isCharging}`);
 
             if (!stickId || latitude === undefined || longitude === undefined) { 
                 return res.status(400).json({ message: 'Missing stickId, latitude, or longitude.' });
@@ -46,6 +46,7 @@ module.exports = function(io) {
             const newLocation = new Location({
                 stickId,
                 batteryLevel,
+                isCharging,
                 obstacleDetected,
                 emergency: finalEmergencyState,
                 location: {

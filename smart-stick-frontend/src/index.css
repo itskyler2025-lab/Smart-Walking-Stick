@@ -101,3 +101,14 @@ code {
 .live-marker-pulse {
   overflow: visible !important; /* Allow the pulse to expand outside the pin container */
 }
+
+/* Low Battery Pulse Animation */
+@keyframes low-battery-pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.4; }
+  100% { opacity: 1; }
+}
+
+.low-battery-pulse {
+  animation: low-battery-pulse 2s infinite ease-in-out;
+}

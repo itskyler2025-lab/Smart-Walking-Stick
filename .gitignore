@@ -1,6 +1,5 @@
-SmartStickNative/
-
 # Standard ignores
+SmartStickNative/
 node_modules/
 .DS_Store
 .env

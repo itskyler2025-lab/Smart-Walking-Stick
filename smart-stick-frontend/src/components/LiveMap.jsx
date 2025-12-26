@@ -167,7 +167,9 @@ function LiveMap({ stickId, onLocationUpdate, onStatusChange, onAuthError, onBat
                 setMapCenter(newPos);
             }
             if (onLocationUpdate) onLocationUpdate(data.timestamp); // Send raw timestamp for calculation
-            if (data.batteryLevel !== undefined && onBatteryUpdate) onBatteryUpdate(data.batteryLevel);
+            if (data.batteryLevel !== undefined && onBatteryUpdate) {
+                onBatteryUpdate({ level: data.batteryLevel, isCharging: data.isCharging });
+            }
             
             // Check if the latest data has emergency flag
             if (data.emergency) setIsEmergency(true);
@@ -355,7 +357,9 @@ function LiveMap({ stickId, onLocationUpdate, onStatusChange, onAuthError, onBat
                 setPathHistory(prev => [...prev, { lat: newPos.lat, lng: newPos.lng, time: data.timestamp }]);
                 
                 if (onLocationUpdate) onLocationUpdate(data.timestamp); // Send raw timestamp for calculation
-                if (data.batteryLevel !== undefined && onBatteryUpdate) onBatteryUpdate(data.batteryLevel);
+                if (data.batteryLevel !== undefined && onBatteryUpdate) {
+                    onBatteryUpdate({ level: data.batteryLevel, isCharging: data.isCharging });
+                }
 
                 if (data.emergency) {
                     setIsEmergency(true);

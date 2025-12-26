@@ -6,7 +6,7 @@ import LiveMap from './components/LiveMap';
 import Login from './pages/Login';
 import Register from './pages/Register'; 
 import ResetPassword from './pages/ResetPassword';
-import { FaRegClock, FaUnlink } from 'react-icons/fa';
+import { FaRegClock, FaUnlink, FaBatteryFull, FaBatteryThreeQuarters, FaBatteryHalf, FaBatteryQuarter, FaBatteryEmpty, FaBolt } from 'react-icons/fa';
 import { TailSpin } from 'react-loader-spinner';
 import { requestForToken } from './utils/firebase'; // Import the new function
 import { ToastContainer } from 'react-toastify';
@@ -43,7 +43,7 @@ function App() {
   const [lastUpdate, setLastUpdate] = useState(null);
   const [isLive, setIsLive] = useState(true); // To track connection status
   const [isReconnecting, setIsReconnecting] = useState(false);
-  const [batteryLevel, setBatteryLevel] = useState(null);
+  const [batteryStatus, setBatteryStatus] = useState({ level: null, isCharging: false });
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
   const [isLogoutHovered, setIsLogoutHovered] = useState(false);
   const [currentTime, setCurrentTime] = useState(Date.now());
@@ -87,11 +87,22 @@ function App() {
 
   const isMobile = windowWidth < 600;
 
-  const getBatteryColor = (level) => {
+  const getBatteryColor = (level, isCharging) => {
+    if (isCharging) return '#f1c40f'; // Gold color for charging
     if (level === null || level === undefined) return '#95a5a6';
     if (level >= 60) return '#2ecc71'; // Green
     if (level >= 25) return '#f1c40f'; // Yellow
     return '#e74c3c'; // Red
+  };
+
+  const getBatteryIcon = (level, isCharging) => {
+    if (isCharging) return <FaBolt />;
+    if (level === null || level === undefined) return <FaBatteryEmpty />;
+    if (level >= 90) return <FaBatteryFull />;
+    if (level >= 60) return <FaBatteryThreeQuarters />;
+    if (level >= 35) return <FaBatteryHalf />;
+    if (level >= 10) return <FaBatteryQuarter />;
+    return <FaBatteryEmpty />;
   };
 
   // --- Authenticated Layout ---
@@ -170,23 +181,30 @@ function App() {
             )}
             
             {/* Battery Level Indicator */}
-            <div style={{ display: 'flex', alignItems: 'center', backgroundColor: 'rgba(255, 255, 255, 0.1)', padding: '5px 12px', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.2)' }}>
-                <div style={{ 
-                    width: '35px', 
-                    height: '10px', 
-                    backgroundColor: 'rgba(255,255,255,0.2)', 
-                    borderRadius: '5px', 
+            <div 
+              className={batteryStatus.level !== null && batteryStatus.level < 20 && !batteryStatus.isCharging ? "low-battery-pulse" : ""}
+              style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                backgroundColor: 'rgba(255, 255, 255, 0.1)', 
+                padding: '6px 14px', 
+                borderRadius: '20px', 
+                border: `1px solid ${getBatteryColor(batteryStatus.level, batteryStatus.isCharging)}`, // Border matches battery color
+                transition: 'all 0.3s ease',
+                boxShadow: batteryStatus.level !== null && batteryStatus.level < 20 && !batteryStatus.isCharging ? '0 0 8px rgba(231, 76, 60, 0.4)' : 'none'
+            }}>
+                <span style={{ 
+                    color: getBatteryColor(batteryStatus.level, batteryStatus.isCharging), 
+                    fontSize: '1.2em', 
                     marginRight: '8px', 
-                    overflow: 'hidden'
+                    display: 'flex', 
+                    alignItems: 'center' 
                 }}>
-                    <div style={{ 
-                        width: `${batteryLevel !== null ? batteryLevel : 0}%`, 
-                        height: '100%', 
-                        backgroundColor: getBatteryColor(batteryLevel),
-                        transition: 'width 0.5s ease, background-color 0.5s ease'
-                    }} />
-                </div>
-                <span style={{ color: '#EEEEEE', fontWeight: 'bold', fontSize: '0.9em', minWidth: '35px', textAlign: 'right' }}>{batteryLevel !== null ? `${batteryLevel}%` : '--%'}</span>
+                    {getBatteryIcon(batteryStatus.level, batteryStatus.isCharging)}
+                </span>
+                <span style={{ color: '#EEEEEE', fontWeight: 'bold', fontSize: '0.9em' }}>
+                    {batteryStatus.level !== null ? `${batteryStatus.level}%` : '--%'}
+                </span>
             </div>
 
             {/* Logout Button (High contrast, clearly visible action) */}
@@ -211,7 +229,7 @@ function App() {
             </button>
           </div>
         </header>
-        <LiveMap stickId={stickId} onLocationUpdate={setLastUpdate} onStatusChange={setIsLive} onAuthError={handleLogout} onBatteryUpdate={setBatteryLevel} onReconnecting={setIsReconnecting} />
+        <LiveMap stickId={stickId} onLocationUpdate={setLastUpdate} onStatusChange={setIsLive} onAuthError={handleLogout} onBatteryUpdate={setBatteryStatus} onReconnecting={setIsReconnecting} />
         <ToastContainer 
           position="bottom-right"
           autoClose={5000}
