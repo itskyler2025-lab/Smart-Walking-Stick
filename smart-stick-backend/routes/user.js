@@ -108,9 +108,17 @@ router.put('/fcm-token', auth, async (req, res) => {
 router.put('/change-password', auth, async (req, res) => {
     const { currentPassword, newPassword } = req.body;
 
+    if (!currentPassword || !newPassword) {
+        return res.status(400).json({ msg: 'Please provide both current and new passwords.' });
+    }
+
     try {
         const user = await User.findById(req.user.userId);
         if (!user) return res.status(404).json({ msg: 'User not found' });
+
+        if (!user.password) {
+            return res.status(400).json({ msg: 'Account does not have a password set.' });
+        }
 
         const isMatch = await bcrypt.compare(currentPassword, user.password);
         if (!isMatch) return res.status(400).json({ msg: 'Invalid current password' });
@@ -120,6 +128,32 @@ router.put('/change-password', auth, async (req, res) => {
         await user.save();
 
         res.json({ msg: 'Password updated successfully' });
+    } catch (err) {
+        console.error('Change password error:', err);
+        res.status(500).send('Server Error');
+    }
+});
+
+// PUT /api/user/change-email
+// Desc: Change user email
+router.put('/change-email', auth, async (req, res) => {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+        return res.status(400).json({ msg: 'Please provide new email and current password.' });
+    }
+
+    try {
+        const user = await User.findById(req.user.userId);
+        if (!user) return res.status(404).json({ msg: 'User not found' });
+
+        const isMatch = await bcrypt.compare(password, user.password);
+        if (!isMatch) return res.status(400).json({ msg: 'Invalid password' });
+
+        user.email = email;
+        await user.save();
+
+        res.json({ msg: 'Email updated successfully', email: user.email });
     } catch (err) {
         console.error(err.message);
         res.status(500).send('Server Error');

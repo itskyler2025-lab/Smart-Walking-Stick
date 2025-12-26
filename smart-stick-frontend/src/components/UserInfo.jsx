@@ -1,7 +1,7 @@
 // src/components/UserInfo.js
 
 import React, { useState, useEffect } from 'react';
-import { FaUser, FaPencilAlt, FaTimes, FaSave, FaIdCard, FaMapMarkerAlt, FaPhoneAlt, FaTint, FaCalendarAlt, FaVenusMars, FaBriefcaseMedical, FaCamera, FaLock } from 'react-icons/fa';
+import { FaUser, FaPencilAlt, FaTimes, FaSave, FaIdCard, FaMapMarkerAlt, FaPhoneAlt, FaTint, FaCalendarAlt, FaVenusMars, FaBriefcaseMedical, FaCamera, FaLock, FaEnvelope } from 'react-icons/fa';
 import { TailSpin } from 'react-loader-spinner';
 import api from '../utils/api'; // Import the api utility
 import { toast } from 'react-toastify';
@@ -41,18 +41,19 @@ const UserInfo = () => {
     const [loading, setLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const [error, setError] = useState('');
-    const [isEditing, setIsEditing] = useState(false);
-    const [isChangingPassword, setIsChangingPassword] = useState(false);
+    const [activeTab, setActiveTab] = useState('profile'); // 'profile', 'edit', 'password', 'email'
     const [form, setForm] = useState({});
     const [passwordForm, setPasswordForm] = useState({
         currentPassword: '',
         newPassword: '',
         confirmNewPassword: ''
     });
-    const [isEditHovered, setIsEditHovered] = useState(false); // State for hover effect
+    const [emailForm, setEmailForm] = useState({
+        newEmail: '',
+        password: ''
+    });
     const [isSaveHovered, setIsSaveHovered] = useState(false);
     const [isCancelHovered, setIsCancelHovered] = useState(false);
-    const [isPasswordHovered, setIsPasswordHovered] = useState(false);
     
     const [windowWidth, setWindowWidth] = useState(window.innerWidth);
 
@@ -66,6 +67,7 @@ const UserInfo = () => {
                 const res = await api.get('/api/user/profile');
                 const profileData = {
                     fullName: res.data.fullName || '',
+                    email: res.data.email || '',
                     birthDate: res.data.birthDate ? new Date(res.data.birthDate).toISOString().split('T')[0] : '',
                     age: res.data.age || '',
                     gender: res.data.gender || '',
@@ -106,6 +108,7 @@ const UserInfo = () => {
             const res = await api.put('/api/user/profile', form);
             const updatedProfileData = {
                 fullName: res.data.fullName || '',
+                email: res.data.email || '',
                 birthDate: res.data.birthDate ? new Date(res.data.birthDate).toISOString().split('T')[0] : '',
                 age: res.data.age || '',
                 gender: res.data.gender || '',
@@ -117,7 +120,7 @@ const UserInfo = () => {
                 profileImage: res.data.profileImage || '',
             };
             setUserData(updatedProfileData);
-            setIsEditing(false);
+            setActiveTab('profile');
             toast.success("Personal information updated!");
         } catch (err) {
             const errorMessage = err.response?.data?.msg || "Failed to update information.";
@@ -159,10 +162,34 @@ const UserInfo = () => {
                 newPassword: passwordForm.newPassword
             });
             toast.success("Password changed successfully!");
-            setIsChangingPassword(false);
+            setActiveTab('profile');
             setPasswordForm({ currentPassword: '', newPassword: '', confirmNewPassword: '' });
         } catch (err) {
             const errorMessage = err.response?.data?.msg || "Failed to change password.";
+            toast.error(errorMessage);
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const handleEmailChangeInput = (e) => {
+        setEmailForm({ ...emailForm, [e.target.name]: e.target.value });
+    };
+
+    const submitEmailChange = async (e) => {
+        e.preventDefault();
+        setIsSaving(true);
+        try {
+            const res = await api.put('/api/user/change-email', {
+                email: emailForm.newEmail,
+                password: emailForm.password
+            });
+            toast.success("Email updated successfully!");
+            setUserData({ ...userData, email: res.data.email });
+            setActiveTab('profile');
+            setEmailForm({ newEmail: '', password: '' });
+        } catch (err) {
+            const errorMessage = err.response?.data?.msg || "Failed to update email.";
             toast.error(errorMessage);
         } finally {
             setIsSaving(false);
@@ -201,19 +228,6 @@ const UserInfo = () => {
         document.getElementById('profileImageInput').click();
     };
 
-    const editButtonStyle = {
-        gridColumn: '1 / -1',
-        padding: '12px 25px',
-        backgroundColor: isEditHovered ? '#008C9E' : '#00ADB5', // Darker on hover
-        color: 'white',
-        border: 'none',
-        borderRadius: '5px',
-        cursor: 'pointer',
-        marginTop: '20px',
-        fontWeight: 'bold',
-        boxShadow: isEditHovered ? '0 4px 12px rgba(0, 173, 181, 0.5)' : '0 2px 5px rgba(0, 173, 181, 0.3)',
-        transition: 'all 0.3s ease' // Smooth transition
-    };
 
     const saveButtonStyle = {
         padding: '10px 25px',
@@ -242,19 +256,23 @@ const UserInfo = () => {
         boxShadow: isCancelHovered ? '0 4px 8px rgba(255, 255, 255, 0.1)' : 'none'
     };
 
-    const passwordButtonStyle = {
-        gridColumn: '1 / -1',
-        padding: '12px 25px',
-        backgroundColor: isPasswordHovered ? '#222831' : '#393E46',
-        color: '#00ADB5',
-        border: '2px solid #00ADB5',
+    const navButtonStyle = (isActive) => ({
+        display: 'flex',
+        alignItems: 'center',
+        padding: '12px 15px',
+        backgroundColor: isActive ? '#00ADB5' : 'transparent',
+        color: isActive ? 'white' : '#EEEEEE',
+        border: 'none',
         borderRadius: '5px',
         cursor: 'pointer',
-        marginTop: '10px',
-        fontWeight: 'bold',
-        boxShadow: isPasswordHovered ? '0 4px 12px rgba(0, 173, 181, 0.3)' : 'none',
-        transition: 'all 0.3s ease'
-    };
+        marginBottom: isSmallMobile ? '0' : '5px',
+        textAlign: 'left',
+        width: isSmallMobile ? 'auto' : '100%',
+        transition: 'all 0.2s',
+        fontSize: '0.95em',
+        fontWeight: isActive ? 'bold' : 'normal',
+        whiteSpace: 'nowrap'
+    });
 
     if (loading) {
         return <div>Loading user information...</div>;
@@ -266,37 +284,78 @@ const UserInfo = () => {
 
     return (
         <div style={{ 
-            padding: '15px', 
+            display: 'flex',
+            flexDirection: isSmallMobile ? 'column' : 'row',
             backgroundColor: '#393E46', 
             color: '#EEEEEE',
             borderRadius: '10px', 
             boxShadow: '0 4px 15px rgba(0,0,0,0.1)',
             fontFamily: '"Avenir Next", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif',
-            height: '100%',
-            boxSizing: 'border-box'
+            minHeight: '500px',
+            overflow: 'hidden'
         }}>
-            <h3 style={{ 
-                borderBottom: '1px solid #00ADB5', 
-                paddingBottom: '8px', 
-                color: '#EEEEEE', 
-                marginBottom: '12px', 
-                fontSize: '1.3em',
-                fontWeight: '600',
+            {/* Navigation Sidebar/Topbar */}
+            <div style={{
+                width: isSmallMobile ? '100%' : '240px',
+                backgroundColor: '#222831',
+                padding: '20px',
                 display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
+                flexDirection: isSmallMobile ? 'row' : 'column',
+                gap: '10px',
+                borderRight: isSmallMobile ? 'none' : '1px solid #00ADB5',
+                borderBottom: isSmallMobile ? '1px solid #00ADB5' : 'none',
+                overflowX: isSmallMobile ? 'auto' : 'visible'
             }}>
-                <FaUser style={{ marginRight: '10px', verticalAlign: 'middle', color: '#00ADB5' }} /> Personal Information
-            </h3>
-            
-            <div style={{ textAlign: 'center', marginBottom: '20px', position: 'relative' }}>
-                <img 
-                    src={isEditing ? (form.profileImage || 'https://via.placeholder.com/150') : (userData.profileImage || 'https://via.placeholder.com/150')} 
-                    alt="Profile" 
-                    style={{ width: '100px', height: '100px', borderRadius: '50%', objectFit: 'cover', border: '3px solid #00ADB5' }} 
-                />
-                {isEditing && (
-                    <>
+                {/* Profile Image in Sidebar (Desktop) */}
+                {!isSmallMobile && (
+                    <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+                        <img 
+                            src={userData.profileImage || 'https://via.placeholder.com/150'} 
+                            alt="Profile" 
+                            style={{ width: '80px', height: '80px', borderRadius: '50%', objectFit: 'cover', border: '2px solid #00ADB5' }} 
+                        />
+                        <div style={{ marginTop: '10px', fontWeight: 'bold', fontSize: '0.9em' }}>{userData.fullName || 'User'}</div>
+                    </div>
+                )}
+
+                <button onClick={() => setActiveTab('profile')} style={navButtonStyle(activeTab === 'profile')}>
+                    <FaUser style={{ marginRight: '10px' }} /> Profile
+                </button>
+                <button onClick={() => { setForm(userData); setActiveTab('edit'); }} style={navButtonStyle(activeTab === 'edit')}>
+                    <FaPencilAlt style={{ marginRight: '10px' }} /> Edit Info
+                </button>
+                <button onClick={() => setActiveTab('email')} style={navButtonStyle(activeTab === 'email')}>
+                    <FaEnvelope style={{ marginRight: '10px' }} /> Edit Email
+                </button>
+                <button onClick={() => setActiveTab('password')} style={navButtonStyle(activeTab === 'password')}>
+                    <FaLock style={{ marginRight: '10px' }} /> Password
+                </button>
+            </div>
+
+            {/* Main Content Area */}
+            <div style={{ flex: 1, padding: '20px', overflowY: 'auto' }}>
+                <h3 style={{ 
+                    borderBottom: '1px solid #00ADB5', 
+                    paddingBottom: '8px', 
+                    color: '#EEEEEE', 
+                    marginBottom: '20px', 
+                    fontSize: '1.3em',
+                    fontWeight: '600'
+                }}>
+                    {activeTab === 'profile' && 'Personal Information'}
+                    {activeTab === 'edit' && 'Edit Profile'}
+                    {activeTab === 'email' && 'Change Email Address'}
+                    {activeTab === 'password' && 'Change Password'}
+                </h3>
+
+            {activeTab === 'edit' && (
+                <form onSubmit={handleSave} style={getInfoGridStyle()}>
+                    <div style={{ textAlign: 'center', marginBottom: '20px', gridColumn: '1 / -1', position: 'relative' }}>
+                        <img 
+                            src={form.profileImage || 'https://via.placeholder.com/150'} 
+                            alt="Profile" 
+                            style={{ width: '100px', height: '100px', borderRadius: '50%', objectFit: 'cover', border: '3px solid #00ADB5' }} 
+                        />
                         <input 
                             type="file" 
                             id="profileImageInput" 
@@ -312,13 +371,8 @@ const UserInfo = () => {
                         }}>
                             <FaCamera />
                         </button>
-                    </>
-                )}
-            </div>
+                    </div>
 
-            {isEditing ? (
-                // Use responsive grid for the form layout
-                <form onSubmit={handleSave} style={getInfoGridStyle()}>
                     {Object.keys(fieldDisplayMap).map(key => (
                         <div key={key}>
                             <label style={{ fontWeight: '600', display: 'block', marginBottom: '5px', color: '#00ADB5', fontSize: '0.9em' }}>{fieldDisplayMap[key]}:</label>
@@ -371,7 +425,7 @@ const UserInfo = () => {
                     <div style={{ gridColumn: '1 / -1', marginTop: '20px', display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
                         <button 
                             type="button" 
-                            onClick={() => { setIsEditing(false); setForm(userData); }} 
+                            onClick={() => { setActiveTab('profile'); setForm(userData); }} 
                             style={cancelButtonStyle}
                             onMouseEnter={() => setIsCancelHovered(true)}
                             onMouseLeave={() => setIsCancelHovered(false)}
@@ -395,10 +449,10 @@ const UserInfo = () => {
                         </button>
                     </div>
                 </form>
-            ) : isChangingPassword ? (
+            )}
+
+            {activeTab === 'password' && (
                 <form onSubmit={submitPasswordChange} style={getInfoGridStyle()}>
-                    <h4 style={{ color: '#00ADB5', margin: '10px 0', gridColumn: '1 / -1' }}>Change Password</h4>
-                    
                     <div>
                         <label style={{ fontWeight: '600', display: 'block', marginBottom: '5px', color: '#00ADB5', fontSize: '0.9em' }}>Current Password:</label>
                         <input
@@ -436,7 +490,7 @@ const UserInfo = () => {
                     <div style={{ gridColumn: '1 / -1', marginTop: '20px', display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
                         <button 
                             type="button" 
-                            onClick={() => { setIsChangingPassword(false); setPasswordForm({ currentPassword: '', newPassword: '', confirmNewPassword: '' }); }} 
+                            onClick={() => { setActiveTab('profile'); setPasswordForm({ currentPassword: '', newPassword: '', confirmNewPassword: '' }); }} 
                             style={cancelButtonStyle}
                             onMouseEnter={() => setIsCancelHovered(true)}
                             onMouseLeave={() => setIsCancelHovered(false)}
@@ -448,9 +502,64 @@ const UserInfo = () => {
                         </button>
                     </div>
                 </form>
-            ) : (
-                // Use responsive grid for the display layout
+            )}
+
+            {activeTab === 'email' && (
+                <form onSubmit={submitEmailChange} style={getInfoGridStyle()}>
+                    <div style={{ gridColumn: '1 / -1', marginBottom: '15px' }}>
+                        <label style={{ fontWeight: '600', display: 'block', marginBottom: '5px', color: '#00ADB5', fontSize: '0.9em' }}>Current Email:</label>
+                        <div style={{ padding: '10px', backgroundColor: '#2C3139', borderRadius: '4px', color: '#AAA' }}>{userData.email}</div>
+                    </div>
+                    <div>
+                        <label style={{ fontWeight: '600', display: 'block', marginBottom: '5px', color: '#00ADB5', fontSize: '0.9em' }}>New Email Address:</label>
+                        <input
+                            type="email"
+                            name="newEmail"
+                            value={emailForm.newEmail}
+                            onChange={handleEmailChangeInput}
+                            required
+                            style={{ width: '100%', padding: '10px', border: '1px solid #00ADB5', borderRadius: '4px', backgroundColor: '#222831', color: '#EEEEEE', boxSizing: 'border-box' }}
+                        />
+                    </div>
+                    <div>
+                        <label style={{ fontWeight: '600', display: 'block', marginBottom: '5px', color: '#00ADB5', fontSize: '0.9em' }}>Current Password (to confirm):</label>
+                        <input
+                            type="password"
+                            name="password"
+                            value={emailForm.password}
+                            onChange={handleEmailChangeInput}
+                            required
+                            style={{ width: '100%', padding: '10px', border: '1px solid #00ADB5', borderRadius: '4px', backgroundColor: '#222831', color: '#EEEEEE', boxSizing: 'border-box' }}
+                        />
+                    </div>
+
+                    <div style={{ gridColumn: '1 / -1', marginTop: '20px', display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+                        <button type="submit" style={saveButtonStyle} onMouseEnter={() => setIsSaveHovered(true)} onMouseLeave={() => setIsSaveHovered(false)} disabled={isSaving}>
+                            {isSaving ? <TailSpin color="white" height={20} width={20} /> : <><FaSave style={{ marginRight: '5px' }} /> Update Email</>}
+                        </button>
+                    </div>
+                </form>
+            )}
+
+            {activeTab === 'profile' && (
                 <div style={getInfoGridStyle()}>
+                    {/* Mobile Profile Image */}
+                    {isSmallMobile && (
+                        <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+                            <img 
+                                src={userData.profileImage || 'https://via.placeholder.com/150'} 
+                                alt="Profile" 
+                                style={{ width: '100px', height: '100px', borderRadius: '50%', objectFit: 'cover', border: '3px solid #00ADB5' }} 
+                            />
+                        </div>
+                    )}
+                    
+                    <p style={{ margin: '0', padding: '4px 0', borderBottom: '1px dotted #e0e0e0', display: 'flex', alignItems: 'center', minWidth: 0, lineHeight: '1.4', fontSize: '0.9em' }}>
+                        <span style={{ flexShrink: 0, display: 'flex', alignItems: 'center' }}><FaEnvelope style={{ color: '#00ADB5' }} /></span>
+                        <strong style={{ color: '#00ADB5', margin: '0 5px 0 8px', fontSize: '1em', width: isSmallMobile ? '130px' : '160px', flexShrink: 0 }}>Email:</strong>
+                        <span style={{ flex: 1, wordBreak: 'break-word', overflowWrap: 'anywhere', textAlign: 'left' }}>{userData.email}</span>
+                    </p>
+
                     {Object.keys(fieldDisplayMap).map(key => (
                         <p key={key} style={{ margin: '0', padding: '4px 0', borderBottom: '1px dotted #e0e0e0', display: 'flex', alignItems: 'center', minWidth: 0, lineHeight: '1.4', fontSize: '0.9em' }}>
                             <span style={{ flexShrink: 0, display: 'flex', alignItems: 'center' }}>{iconMap[fieldDisplayMap[key]]}</span>
@@ -462,25 +571,9 @@ const UserInfo = () => {
                             </span>
                         </p>
                     ))}
-                    {/* Ensure button spans full width on mobile if needed */}
-                    <div style={{ gridColumn: '1 / -1', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                        <button 
-                            onClick={() => { setForm(userData); setIsEditing(true); }} 
-                            style={editButtonStyle}
-                            onMouseEnter={() => setIsEditHovered(true)}
-                            onMouseLeave={() => setIsEditHovered(false)}>
-                            <FaPencilAlt style={{ marginRight: '8px' }} /> Edit Information
-                        </button>
-                        <button 
-                            onClick={() => setIsChangingPassword(true)} 
-                            style={passwordButtonStyle}
-                            onMouseEnter={() => setIsPasswordHovered(true)}
-                            onMouseLeave={() => setIsPasswordHovered(false)}>
-                            <FaLock style={{ marginRight: '8px' }} /> Change Password
-                        </button>
-                    </div>
                 </div>
             )}
+            </div>
         </div>
     );
 };
