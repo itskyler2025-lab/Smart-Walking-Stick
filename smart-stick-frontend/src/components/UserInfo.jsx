@@ -289,6 +289,7 @@ const UserInfo = () => {
 
     return (
         <div style={{ 
+            position: 'relative',
             display: 'flex',
             flexDirection: 'column',
             backgroundColor: '#393E46', 
@@ -297,39 +298,41 @@ const UserInfo = () => {
             boxShadow: '0 4px 15px rgba(0,0,0,0.1)',
             fontFamily: '"Avenir Next", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif',
             minHeight: '500px',
-            overflow: 'hidden'
+            overflow: 'visible'
         }}>
-            {/* Top Nav Bar */}
-            <div style={{
-                backgroundColor: '#222831',
-                padding: '15px 20px',
-                display: 'flex',
-                justifyContent: 'flex-end',
-                alignItems: 'center',
-                borderBottom: '1px solid #00ADB5'
-            }}>
-                <button 
-                    onClick={() => setIsMenuOpen(!isMenuOpen)}
-                    style={{
-                        background: 'transparent',
-                        border: 'none',
-                        color: '#00ADB5',
-                        fontSize: '1.5em',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center'
-                    }}
-                >
-                    {isMenuOpen ? <FaTimes /> : <FaBars />}
-                </button>
-            </div>
+            {/* Menu Button - Absolute Top Right */}
+            <button 
+                onClick={() => setIsMenuOpen(!isMenuOpen)}
+                style={{
+                    position: 'absolute',
+                    top: '20px',
+                    right: '20px',
+                    background: 'transparent',
+                    border: 'none',
+                    color: '#00ADB5',
+                    fontSize: '1.5em',
+                    cursor: 'pointer',
+                    zIndex: 100,
+                    display: 'flex',
+                    alignItems: 'center'
+                }}
+            >
+                {isMenuOpen ? <FaTimes /> : <FaBars />}
+            </button>
 
             {/* Dropdown Menu */}
             {isMenuOpen && (
                 <div style={{
+                    position: 'absolute',
+                    top: '60px',
+                    right: '20px',
+                    width: '200px',
+                    zIndex: 99,
                     backgroundColor: '#2C3139',
                     padding: '15px',
-                    borderBottom: '1px solid #393E46',
+                    borderRadius: '8px',
+                    boxShadow: '0 4px 15px rgba(0,0,0,0.5)',
+                    border: '1px solid #00ADB5',
                     display: 'flex',
                     flexDirection: 'column',
                     gap: '5px'
@@ -353,7 +356,7 @@ const UserInfo = () => {
             )}
 
             {/* Main Content Area */}
-            <div style={{ flex: 1, padding: '20px', overflowY: 'auto' }}>
+            <div style={{ flex: 1, padding: '20px', paddingTop: '40px', overflowY: 'auto' }}>
                 <h3 style={{ 
                     borderBottom: '1px solid #00ADB5', 
                     paddingBottom: '8px', 
