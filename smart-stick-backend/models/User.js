@@ -31,6 +31,9 @@ const UserSchema = new Schema({
         type: String,
         trim: true
     },
+    birthDate: {
+        type: Date
+    },
     age: {
         type: Number
     },
@@ -52,6 +55,9 @@ const UserSchema = new Schema({
     // Medical Information
     medicalCondition: {
         type: String
+    },
+    profileImage: {
+        type: String // Will store as a base64 data URI
     },
     // Field to store the Firebase Cloud Messaging (FCM) token for push notifications
     fcmToken: {
