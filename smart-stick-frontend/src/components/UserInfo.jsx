@@ -1,7 +1,7 @@
 // src/components/UserInfo.js
 
 import React, { useState, useEffect } from 'react';
-import { FaUser, FaPencilAlt, FaTimes, FaSave, FaIdCard, FaMapMarkerAlt, FaPhoneAlt, FaTint, FaCalendarAlt, FaVenusMars, FaBriefcaseMedical, FaCamera } from 'react-icons/fa';
+import { FaPencilAlt, FaTimes, FaSave, FaIdCard, FaMapMarkerAlt, FaPhoneAlt, FaTint, FaCalendarAlt, FaVenusMars, FaBriefcaseMedical, FaCamera } from 'react-icons/fa';
 import { TailSpin } from 'react-loader-spinner';
 import api from '../utils/api'; // Import the api utility
 import { toast } from 'react-toastify';

@@ -6,6 +6,7 @@ import LiveMap from './components/LiveMap';
 import Login from './pages/Login';
 import Register from './pages/Register'; 
 import ResetPassword from './pages/ResetPassword';
+import UserInfo from './components/UserInfo';
 import { requestForToken } from './utils/firebase'; // Import the new function
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -107,7 +108,27 @@ function App() {
   const AuthenticatedLayout = (
       <div className="App" style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #222831 0%, #393E46 100%)', backgroundAttachment: 'fixed' }}>
         
-        <Navbar />
+        <div style={{ 
+          padding: '15px 20px', 
+          backgroundColor: '#393E46', 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'center', 
+          boxShadow: '0 4px 8px rgba(0,0,0,0.1)' 
+        }}>
+          <h1 style={{ margin: 0, color: '#00ADB5', fontSize: '1.5em' }}>Smart Stick Tracker</h1>
+          <button onClick={handleLogout} style={{
+            padding: '8px 15px',
+            backgroundColor: '#e74c3c',
+            color: 'white',
+            border: 'none',
+            borderRadius: '5px',
+            cursor: 'pointer',
+            fontWeight: 'bold'
+          }}>Logout</button>
+        </div>
+        
+        <UserInfo />
         <LiveMap stickId={stickId} onLocationUpdate={setLastUpdate} onStatusChange={setIsLive} onAuthError={handleLogout} onBatteryUpdate={setBatteryStatus} onReconnecting={setIsReconnecting} />
         <ToastContainer 
           position="bottom-right"
