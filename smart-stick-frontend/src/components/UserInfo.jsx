@@ -1,7 +1,7 @@
 // src/components/UserInfo.js
 
 import React, { useState, useEffect } from 'react';
-import { FaUser, FaPencilAlt, FaTimes, FaSave, FaIdCard, FaMapMarkerAlt, FaPhoneAlt, FaTint, FaCalendarAlt, FaVenusMars, FaBriefcaseMedical, FaCamera, FaLock, FaEnvelope, FaSignOutAlt } from 'react-icons/fa';
+import { FaUser, FaPencilAlt, FaTimes, FaSave, FaIdCard, FaMapMarkerAlt, FaPhoneAlt, FaTint, FaCalendarAlt, FaVenusMars, FaBriefcaseMedical, FaCamera, FaLock, FaEnvelope } from 'react-icons/fa';
 import { TailSpin } from 'react-loader-spinner';
 import api from '../utils/api'; // Import the api utility
 import { toast } from 'react-toastify';
@@ -506,16 +506,14 @@ const UserInfo = () => {
 
             {activeTab === 'profile' && (
                 <div style={getInfoGridStyle()}>
-                    {/* Mobile Profile Image */}
-                    {isSmallMobile && (
-                        <div style={{ textAlign: 'center', marginBottom: '20px' }}>
-                            <img 
-                                src={userData.profileImage || 'https://via.placeholder.com/150'} 
-                                alt="Profile" 
-                                style={{ width: '100px', height: '100px', borderRadius: '50%', objectFit: 'cover', border: '3px solid #00ADB5' }} 
-                            />
-                        </div>
-                    )}
+                    {/* Profile Image */}
+                    <div style={{ textAlign: 'center', marginBottom: '20px', gridColumn: '1 / -1' }}>
+                        <img 
+                            src={userData.profileImage || 'https://via.placeholder.com/150'} 
+                            alt="Profile" 
+                            style={{ width: '100px', height: '100px', borderRadius: '50%', objectFit: 'cover', border: '3px solid #00ADB5' }} 
+                        />
+                    </div>
                     
                     <p style={{ margin: '0', padding: '4px 0', borderBottom: '1px dotted #e0e0e0', display: 'flex', alignItems: 'center', minWidth: 0, lineHeight: '1.4', fontSize: '0.9em' }}>
                         <span style={{ flexShrink: 0, display: 'flex', alignItems: 'center' }}><FaEnvelope style={{ color: '#00ADB5' }} /></span>
@@ -537,15 +535,6 @@ const UserInfo = () => {
                     <div style={{ gridColumn: '1 / -1', marginTop: '20px' }}>
                         <button onClick={() => { setForm(userData); setActiveTab('edit'); }} style={actionButtonStyle}>
                             <FaPencilAlt style={{ marginRight: '8px' }} /> Edit Information
-                        </button>
-                        <button onClick={() => setActiveTab('email')} style={actionButtonStyle}>
-                            <FaEnvelope style={{ marginRight: '8px' }} /> Change Email
-                        </button>
-                        <button onClick={() => setActiveTab('password')} style={actionButtonStyle}>
-                            <FaLock style={{ marginRight: '8px' }} /> Change Password
-                        </button>
-                        <button onClick={handleLogout} style={{ ...actionButtonStyle, borderColor: '#ff6b6b', color: '#ff6b6b' }}>
-                            <FaSignOutAlt style={{ marginRight: '8px' }} /> Logout
                         </button>
                     </div>
                 </div>
