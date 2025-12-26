@@ -1,7 +1,7 @@
 // src/components/UserInfo.js
 
 import React, { useState, useEffect } from 'react';
-import { FaPencilAlt, FaTimes, FaSave, FaIdCard, FaMapMarkerAlt, FaPhoneAlt, FaTint, FaCalendarAlt, FaVenusMars, FaBriefcaseMedical, FaCamera } from 'react-icons/fa';
+import { FaUser, FaPencilAlt, FaTimes, FaSave, FaIdCard, FaMapMarkerAlt, FaPhoneAlt, FaTint, FaCalendarAlt, FaVenusMars, FaBriefcaseMedical, FaCamera } from 'react-icons/fa';
 import { TailSpin } from 'react-loader-spinner';
 import api from '../utils/api'; // Import the api utility
 import { toast } from 'react-toastify';
@@ -344,16 +344,14 @@ const UserInfo = () => {
 
             {activeTab === 'profile' && (
                 <div style={getInfoGridStyle()}>
-                    {/* Mobile Profile Image */}
-                    {isSmallMobile && (
-                        <div style={{ textAlign: 'center', marginBottom: '20px' }}>
-                            <img 
-                                src={userData.profileImage || 'https://via.placeholder.com/150'} 
-                                alt="Profile" 
-                                style={{ width: '100px', height: '100px', borderRadius: '50%', objectFit: 'cover', border: '3px solid #00ADB5' }} 
-                            />
-                        </div>
-                    )}
+                    {/* Profile Image */}
+                    <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+                        <img 
+                            src={userData.profileImage || 'https://via.placeholder.com/150'} 
+                            alt="Profile" 
+                            style={{ width: '100px', height: '100px', borderRadius: '50%', objectFit: 'cover', border: '3px solid #00ADB5' }} 
+                        />
+                    </div>
                     
                     {Object.keys(fieldDisplayMap).map(key => (
                         <p key={key} style={{ margin: '0', padding: '4px 0', borderBottom: '1px dotted #e0e0e0', display: 'flex', alignItems: 'center', minWidth: 0, lineHeight: '1.4', fontSize: '0.9em' }}>
