@@ -1,7 +1,7 @@
 // src/components/UserInfo.js
 
 import React, { useState, useEffect } from 'react';
-import { FaUser, FaPencilAlt, FaTimes, FaSave, FaIdCard, FaMapMarkerAlt, FaPhoneAlt, FaTint, FaCalendarAlt, FaVenusMars, FaBriefcaseMedical, FaCamera, FaLock } from 'react-icons/fa';
+import { FaPencilAlt, FaTimes, FaSave, FaIdCard, FaMapMarkerAlt, FaPhoneAlt, FaTint, FaCalendarAlt, FaVenusMars, FaBriefcaseMedical, FaCamera } from 'react-icons/fa';
 import { TailSpin } from 'react-loader-spinner';
 import api from '../utils/api'; // Import the api utility
 import { toast } from 'react-toastify';
@@ -43,15 +43,6 @@ const UserInfo = () => {
     const [error, setError] = useState('');
     const [activeTab, setActiveTab] = useState('profile'); // 'profile', 'edit', 'password', 'email'
     const [form, setForm] = useState({});
-    const [passwordForm, setPasswordForm] = useState({
-        currentPassword: '',
-        newPassword: '',
-        confirmNewPassword: ''
-    });
-    const [emailForm, setEmailForm] = useState({
-        newEmail: '',
-        password: ''
-    });
     const [isSaveHovered, setIsSaveHovered] = useState(false);
     const [isCancelHovered, setIsCancelHovered] = useState(false);
     
@@ -141,61 +132,6 @@ const UserInfo = () => {
         }
     };
 
-    const handlePasswordChangeInput = (e) => {
-        setPasswordForm({ ...passwordForm, [e.target.name]: e.target.value });
-    };
-
-    const submitPasswordChange = async (e) => {
-        e.preventDefault();
-        if (passwordForm.newPassword !== passwordForm.confirmNewPassword) {
-            toast.error("New passwords do not match.");
-            return;
-        }
-        if (passwordForm.newPassword.length < 6) {
-            toast.error("Password must be at least 6 characters.");
-            return;
-        }
-        setIsSaving(true);
-        try {
-            await api.put('/api/user/change-password', {
-                currentPassword: passwordForm.currentPassword,
-                newPassword: passwordForm.newPassword
-            });
-            toast.success("Password changed successfully!");
-            setActiveTab('profile');
-            setPasswordForm({ currentPassword: '', newPassword: '', confirmNewPassword: '' });
-        } catch (err) {
-            const errorMessage = err.response?.data?.msg || "Failed to change password.";
-            toast.error(errorMessage);
-        } finally {
-            setIsSaving(false);
-        }
-    };
-
-    const handleEmailChangeInput = (e) => {
-        setEmailForm({ ...emailForm, [e.target.name]: e.target.value });
-    };
-
-    const submitEmailChange = async (e) => {
-        e.preventDefault();
-        setIsSaving(true);
-        try {
-            const res = await api.put('/api/user/change-email', {
-                email: emailForm.newEmail,
-                password: emailForm.password
-            });
-            toast.success("Email updated successfully!");
-            setUserData({ ...userData, email: res.data.email });
-            setActiveTab('profile');
-            setEmailForm({ newEmail: '', password: '' });
-        } catch (err) {
-            const errorMessage = err.response?.data?.msg || "Failed to update email.";
-            toast.error(errorMessage);
-        } finally {
-            setIsSaving(false);
-        }
-    };
-
     const handleImageChange = (e) => {
         const file = e.target.files[0];
         if (file) {
@@ -226,11 +162,6 @@ const UserInfo = () => {
 
     const triggerImageInput = () => {
         document.getElementById('profileImageInput').click();
-    };
-
-    const handleLogout = () => {
-        localStorage.removeItem('token');
-        window.location.reload();
     };
 
     const saveButtonStyle = {
@@ -307,10 +238,7 @@ const UserInfo = () => {
                 }}>
                     {activeTab === 'profile' && 'Personal Information'}
                     {activeTab === 'edit' && 'Edit Profile'}
-                    {activeTab === 'email' && 'Change Email Address'}
-                    {activeTab === 'password' && 'Change Password'}
                 </h3>
-
             {activeTab === 'edit' && (
                 <form onSubmit={handleSave} style={getInfoGridStyle()}>
                     <div style={{ textAlign: 'center', marginBottom: '20px', gridColumn: '1 / -1', position: 'relative' }}>
@@ -414,106 +342,18 @@ const UserInfo = () => {
                 </form>
             )}
 
-            {activeTab === 'password' && (
-                <form onSubmit={submitPasswordChange} style={getInfoGridStyle()}>
-                    <div>
-                        <label style={{ fontWeight: '600', display: 'block', marginBottom: '5px', color: '#00ADB5', fontSize: '0.9em' }}>Current Password:</label>
-                        <input
-                            type="password"
-                            name="currentPassword"
-                            value={passwordForm.currentPassword}
-                            onChange={handlePasswordChangeInput}
-                            required
-                            style={{ width: '100%', padding: '10px', border: '1px solid #00ADB5', borderRadius: '4px', backgroundColor: '#222831', color: '#EEEEEE', boxSizing: 'border-box' }}
-                        />
-                    </div>
-                    <div>
-                        <label style={{ fontWeight: '600', display: 'block', marginBottom: '5px', color: '#00ADB5', fontSize: '0.9em' }}>New Password:</label>
-                        <input
-                            type="password"
-                            name="newPassword"
-                            value={passwordForm.newPassword}
-                            onChange={handlePasswordChangeInput}
-                            required
-                            style={{ width: '100%', padding: '10px', border: '1px solid #00ADB5', borderRadius: '4px', backgroundColor: '#222831', color: '#EEEEEE', boxSizing: 'border-box' }}
-                        />
-                    </div>
-                    <div>
-                        <label style={{ fontWeight: '600', display: 'block', marginBottom: '5px', color: '#00ADB5', fontSize: '0.9em' }}>Confirm New Password:</label>
-                        <input
-                            type="password"
-                            name="confirmNewPassword"
-                            value={passwordForm.confirmNewPassword}
-                            onChange={handlePasswordChangeInput}
-                            required
-                            style={{ width: '100%', padding: '10px', border: '1px solid #00ADB5', borderRadius: '4px', backgroundColor: '#222831', color: '#EEEEEE', boxSizing: 'border-box' }}
-                        />
-                    </div>
-
-                    <div style={{ gridColumn: '1 / -1', marginTop: '20px', display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
-                        <button 
-                            type="button" 
-                            onClick={() => { setActiveTab('profile'); setPasswordForm({ currentPassword: '', newPassword: '', confirmNewPassword: '' }); }} 
-                            style={cancelButtonStyle}
-                            onMouseEnter={() => setIsCancelHovered(true)}
-                            onMouseLeave={() => setIsCancelHovered(false)}
-                        >
-                            <FaTimes style={{ marginRight: '5px' }} /> Cancel
-                        </button>
-                        <button type="submit" style={saveButtonStyle} onMouseEnter={() => setIsSaveHovered(true)} onMouseLeave={() => setIsSaveHovered(false)} disabled={isSaving}>
-                            {isSaving ? <TailSpin color="white" height={20} width={20} /> : <><FaSave style={{ marginRight: '5px' }} /> Update Password</>}
-                        </button>
-                    </div>
-                </form>
-            )}
-
-            {activeTab === 'email' && (
-                <form onSubmit={submitEmailChange} style={getInfoGridStyle()}>
-                    <div style={{ gridColumn: '1 / -1', marginBottom: '15px' }}>
-                        <label style={{ fontWeight: '600', display: 'block', marginBottom: '5px', color: '#00ADB5', fontSize: '0.9em' }}>Current Email:</label>
-                        <div style={{ padding: '10px', backgroundColor: '#2C3139', borderRadius: '4px', color: '#AAA' }}>{userData.email}</div>
-                    </div>
-                    <div>
-                        <label style={{ fontWeight: '600', display: 'block', marginBottom: '5px', color: '#00ADB5', fontSize: '0.9em' }}>New Email Address:</label>
-                        <input
-                            type="email"
-                            name="newEmail"
-                            value={emailForm.newEmail}
-                            onChange={handleEmailChangeInput}
-                            required
-                            style={{ width: '100%', padding: '10px', border: '1px solid #00ADB5', borderRadius: '4px', backgroundColor: '#222831', color: '#EEEEEE', boxSizing: 'border-box' }}
-                        />
-                    </div>
-                    <div>
-                        <label style={{ fontWeight: '600', display: 'block', marginBottom: '5px', color: '#00ADB5', fontSize: '0.9em' }}>Current Password (to confirm):</label>
-                        <input
-                            type="password"
-                            name="password"
-                            value={emailForm.password}
-                            onChange={handleEmailChangeInput}
-                            required
-                            style={{ width: '100%', padding: '10px', border: '1px solid #00ADB5', borderRadius: '4px', backgroundColor: '#222831', color: '#EEEEEE', boxSizing: 'border-box' }}
-                        />
-                    </div>
-
-                    <div style={{ gridColumn: '1 / -1', marginTop: '20px', display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
-                        <button type="submit" style={saveButtonStyle} onMouseEnter={() => setIsSaveHovered(true)} onMouseLeave={() => setIsSaveHovered(false)} disabled={isSaving}>
-                            {isSaving ? <TailSpin color="white" height={20} width={20} /> : <><FaSave style={{ marginRight: '5px' }} /> Update Email</>}
-                        </button>
-                    </div>
-                </form>
-            )}
-
             {activeTab === 'profile' && (
                 <div style={getInfoGridStyle()}>
-                    {/* Profile Image */}
-                    <div style={{ textAlign: 'center', marginBottom: '20px', gridColumn: '1 / -1' }}>
-                        <img 
-                            src={userData.profileImage || 'https://via.placeholder.com/150'} 
-                            alt="Profile" 
-                            style={{ width: '100px', height: '100px', borderRadius: '50%', objectFit: 'cover', border: '3px solid #00ADB5' }} 
-                        />
-                    </div>
+                    {/* Mobile Profile Image */}
+                    {isSmallMobile && (
+                        <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+                            <img 
+                                src={userData.profileImage || 'https://via.placeholder.com/150'} 
+                                alt="Profile" 
+                                style={{ width: '100px', height: '100px', borderRadius: '50%', objectFit: 'cover', border: '3px solid #00ADB5' }} 
+                            />
+                        </div>
+                    )}
                     
                     {Object.keys(fieldDisplayMap).map(key => (
                         <p key={key} style={{ margin: '0', padding: '4px 0', borderBottom: '1px dotted #e0e0e0', display: 'flex', alignItems: 'center', minWidth: 0, lineHeight: '1.4', fontSize: '0.9em' }}>
