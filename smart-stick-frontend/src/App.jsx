@@ -7,6 +7,8 @@ import Login from './pages/Login';
 import Register from './pages/Register'; 
 import ResetPassword from './pages/ResetPassword';
 import UserInfo from './components/UserInfo';
+import { FaRegClock, FaUnlink, FaBatteryFull, FaBatteryThreeQuarters, FaBatteryHalf, FaBatteryQuarter, FaBatteryEmpty, FaBolt } from 'react-icons/fa';
+import { TailSpin } from 'react-loader-spinner';
 import { requestForToken } from './utils/firebase'; // Import the new function
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
