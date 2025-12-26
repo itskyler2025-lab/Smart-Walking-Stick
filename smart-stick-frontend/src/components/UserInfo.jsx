@@ -1,7 +1,7 @@
 // src/components/UserInfo.js
 
 import React, { useState, useEffect } from 'react';
-import { FaUser, FaPencilAlt, FaTimes, FaSave, FaIdCard, FaMapMarkerAlt, FaPhoneAlt, FaTint, FaCalendarAlt, FaVenusMars, FaBriefcaseMedical, FaCamera, FaLock, FaEnvelope, FaBars, FaSignOutAlt } from 'react-icons/fa';
+import { FaUser, FaPencilAlt, FaTimes, FaSave, FaIdCard, FaMapMarkerAlt, FaPhoneAlt, FaTint, FaCalendarAlt, FaVenusMars, FaBriefcaseMedical, FaCamera, FaLock, FaEnvelope, FaSignOutAlt } from 'react-icons/fa';
 import { TailSpin } from 'react-loader-spinner';
 import api from '../utils/api'; // Import the api utility
 import { toast } from 'react-toastify';
@@ -42,7 +42,6 @@ const UserInfo = () => {
     const [isSaving, setIsSaving] = useState(false);
     const [error, setError] = useState('');
     const [activeTab, setActiveTab] = useState('profile'); // 'profile', 'edit', 'password', 'email'
-    const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [form, setForm] = useState({});
     const [passwordForm, setPasswordForm] = useState({
         currentPassword: '',
@@ -261,23 +260,21 @@ const UserInfo = () => {
         boxShadow: isCancelHovered ? '0 4px 8px rgba(255, 255, 255, 0.1)' : 'none'
     };
 
-    const navButtonStyle = (isActive) => ({
-        display: 'flex',
-        alignItems: 'center',
-        padding: '12px 15px',
-        backgroundColor: isActive ? '#00ADB5' : 'transparent',
-        color: isActive ? 'white' : '#EEEEEE',
-        border: 'none',
+    const actionButtonStyle = {
+        width: '100%',
+        padding: '12px',
+        backgroundColor: 'transparent',
+        color: '#00ADB5',
+        border: '2px solid #00ADB5',
         borderRadius: '5px',
         cursor: 'pointer',
-        marginBottom: '5px',
-        textAlign: 'left',
-        width: '100%',
-        transition: 'all 0.2s',
-        fontSize: '0.95em',
-        fontWeight: isActive ? 'bold' : 'normal',
-        whiteSpace: 'nowrap'
-    });
+        fontWeight: 'bold',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: '10px',
+        transition: 'all 0.3s ease'
+    };
 
     if (loading) {
         return <div>Loading user information...</div>;
@@ -289,7 +286,6 @@ const UserInfo = () => {
 
     return (
         <div style={{ 
-            position: 'relative',
             display: 'flex',
             flexDirection: 'column',
             backgroundColor: '#393E46', 
@@ -298,65 +294,9 @@ const UserInfo = () => {
             boxShadow: '0 4px 15px rgba(0,0,0,0.1)',
             fontFamily: '"Avenir Next", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif',
             minHeight: '500px',
-            overflow: 'visible'
+            overflow: 'hidden'
         }}>
-            {/* Menu Button - Absolute Top Right */}
-            <button 
-                onClick={() => setIsMenuOpen(!isMenuOpen)}
-                style={{
-                    position: 'absolute',
-                    top: '20px',
-                    right: '20px',
-                    background: 'transparent',
-                    border: 'none',
-                    color: '#00ADB5',
-                    fontSize: '1.5em',
-                    cursor: 'pointer',
-                    zIndex: 100,
-                    display: 'flex',
-                    alignItems: 'center'
-                }}
-            >
-                {isMenuOpen ? <FaTimes /> : <FaBars />}
-            </button>
-
-            {/* Dropdown Menu */}
-            {isMenuOpen && (
-                <div style={{
-                    position: 'absolute',
-                    top: '60px',
-                    right: '20px',
-                    width: '200px',
-                    zIndex: 99,
-                    backgroundColor: '#2C3139',
-                    padding: '15px',
-                    borderRadius: '8px',
-                    boxShadow: '0 4px 15px rgba(0,0,0,0.5)',
-                    border: '1px solid #00ADB5',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '5px'
-                }}>
-                    <button onClick={() => { setActiveTab('profile'); setIsMenuOpen(false); }} style={navButtonStyle(activeTab === 'profile')}>
-                    <FaUser style={{ marginRight: '10px' }} /> Profile
-                </button>
-                    <button onClick={() => { setForm(userData); setActiveTab('edit'); setIsMenuOpen(false); }} style={navButtonStyle(activeTab === 'edit')}>
-                    <FaPencilAlt style={{ marginRight: '10px' }} /> Edit Info
-                </button>
-                    <button onClick={() => { setActiveTab('email'); setIsMenuOpen(false); }} style={navButtonStyle(activeTab === 'email')}>
-                    <FaEnvelope style={{ marginRight: '10px' }} /> Edit Email
-                </button>
-                    <button onClick={() => { setActiveTab('password'); setIsMenuOpen(false); }} style={navButtonStyle(activeTab === 'password')}>
-                    <FaLock style={{ marginRight: '10px' }} /> Password
-                </button>
-                <button onClick={handleLogout} style={{ ...navButtonStyle(false), color: '#ff6b6b', borderTop: '1px solid #393E46', marginTop: '5px', paddingTop: '15px' }}>
-                    <FaSignOutAlt style={{ marginRight: '10px' }} /> Logout
-                </button>
-            </div>
-            )}
-
-            {/* Main Content Area */}
-            <div style={{ flex: 1, padding: '20px', paddingTop: '40px', overflowY: 'auto' }}>
+            <div style={{ flex: 1, padding: '20px', overflowY: 'auto' }}>
                 <h3 style={{ 
                     borderBottom: '1px solid #00ADB5', 
                     paddingBottom: '8px', 
@@ -594,6 +534,20 @@ const UserInfo = () => {
                             </span>
                         </p>
                     ))}
+                    <div style={{ gridColumn: '1 / -1', marginTop: '20px' }}>
+                        <button onClick={() => { setForm(userData); setActiveTab('edit'); }} style={actionButtonStyle}>
+                            <FaPencilAlt style={{ marginRight: '8px' }} /> Edit Information
+                        </button>
+                        <button onClick={() => setActiveTab('email')} style={actionButtonStyle}>
+                            <FaEnvelope style={{ marginRight: '8px' }} /> Change Email
+                        </button>
+                        <button onClick={() => setActiveTab('password')} style={actionButtonStyle}>
+                            <FaLock style={{ marginRight: '8px' }} /> Change Password
+                        </button>
+                        <button onClick={handleLogout} style={{ ...actionButtonStyle, borderColor: '#ff6b6b', color: '#ff6b6b' }}>
+                            <FaSignOutAlt style={{ marginRight: '8px' }} /> Logout
+                        </button>
+                    </div>
                 </div>
             )}
             </div>
