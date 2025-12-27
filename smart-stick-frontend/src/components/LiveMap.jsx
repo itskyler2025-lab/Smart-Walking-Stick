@@ -3,10 +3,11 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { GoogleMap, Polyline, useLoadScript, OverlayView } from '@react-google-maps/api';
 import UserInfo from './UserInfo';
-import { GOOGLE_MAPS_API_KEY, API_URL, GOOGLE_MAPS_MAP_ID } from '../utils/config';
+import { GOOGLE_MAPS_API_KEY, GOOGLE_MAPS_MAP_ID } from '../utils/config';
 import { io } from 'socket.io-client';
 import api from '../utils/api';
 import { toast } from 'react-toastify';
+import { useAppContext } from '../context/AppContext';
 
 import EmergencyBanner from './EmergencyBanner';
 import MapControls from './MapControls';
@@ -16,8 +17,8 @@ import LocationHistory from './LocationHistory';
 // CONFIGURATION
 // ===================================================
 
-const defaultCenter = { lat: 14.00, lng: 121.00 }; 
-const DASHBOARD_BREAKPOINT = 1000;
+import { DASHBOARD_MOBILE_BREAKPOINT } from '../utils/constants';
+const defaultCenter = { lat: 14.00, lng: 121.00 };
 
 // --- EMERGENCY SOUND GENERATOR ---
 const playEmergencySound = () => {
@@ -72,7 +73,8 @@ const topContentGridStyle = {
 
 const libraries = ['marker'];
 
-function LiveMap({ stickId, onLocationUpdate, onStatusChange, onAuthError, onBatteryUpdate, onReconnecting }) {
+function LiveMap() {
+    const { stickId, setLastUpdate, setIsLive, handleLogout, setBatteryStatus, setIsReconnecting, API_URL } = useAppContext();
     const [currentLocation, setCurrentLocation] = useState(null);
     const [pathHistory, setPathHistory] = useState([]); 
     const [mapCenter, setMapCenter] = useState(defaultCenter);
@@ -109,7 +111,7 @@ function LiveMap({ stickId, onLocationUpdate, onStatusChange, onAuthError, onBat
         }
     }, []);
 
-    const isDashboardMobile = windowWidth < DASHBOARD_BREAKPOINT;
+    const isDashboardMobile = windowWidth < DASHBOARD_MOBILE_BREAKPOINT;
 
     // Ref to track following state inside callbacks without triggering re-renders/re-effects
     const isFollowingRef = useRef(true);
@@ -151,8 +153,8 @@ function LiveMap({ stickId, onLocationUpdate, onStatusChange, onAuthError, onBat
             // Check if device is online (data < 60 seconds old)
             const dataTime = new Date(data.timestamp).getTime();
             lastUpdateTimestampRef.current = dataTime;
-            const isOnline = (Date.now() - dataTime) < 60000;
-            if (onStatusChange) onStatusChange(isOnline);
+            const isOnline = (Date.now() - dataTime) < 60000; // 60 seconds
+            setIsLive(isOnline);
 
             const [lng, lat] = data.location.coordinates; 
             const newPos = { lat: parseFloat(lat), lng: parseFloat(lng) };
@@ -166,10 +168,10 @@ function LiveMap({ stickId, onLocationUpdate, onStatusChange, onAuthError, onBat
             if (isFollowingRef.current) {
                 setMapCenter(newPos);
             }
-            if (onLocationUpdate) onLocationUpdate(data.timestamp); // Send raw timestamp for calculation
-            if (data.batteryLevel !== undefined && onBatteryUpdate) {
-                onBatteryUpdate({ level: data.batteryLevel, isCharging: data.isCharging });
-            }
+            setLastUpdate(data.timestamp); // Send raw timestamp for calculation
+            
+            setBatteryStatus({ level: data.batteryLevel, isCharging: data.isCharging });
+            
             
             // Check if the latest data has emergency flag
             if (data.emergency) setIsEmergency(true);
@@ -177,11 +179,11 @@ function LiveMap({ stickId, onLocationUpdate, onStatusChange, onAuthError, onBat
             setIsInitialLoad(false); // Data received, initial load is complete
             
         } catch (error) {
-            console.error("Error fetching latest data:", error.response?.status || error.message);
-            if (onStatusChange) onStatusChange(false);
+            console.error("Error fetching latest data:", error.response ? `${error.response.status} - ${error.response.data.message}` : error.message);
+            setIsLive(false);
             setIsInitialLoad(false); // Initial load attempt is complete
         }
-    }, [stickId, onLocationUpdate, onStatusChange, onBatteryUpdate]);
+    }, [stickId, setLastUpdate, setIsLive, setBatteryStatus]);
 
 
     // --- 2. Fetch Path History (Robust Error Handling) ---
@@ -195,8 +197,7 @@ function LiveMap({ stickId, onLocationUpdate, onStatusChange, onAuthError, onBat
 
             const response = await api.get(`/api/history?${params.toString()}`); 
             
-            // If we get a response, the server is reachable
-            if (onStatusChange) onStatusChange(true);
+            // A successful history fetch implies the server is reachable, but we rely on the socket for 'live' status.
 
             const data = response.data;
 
@@ -209,11 +210,11 @@ function LiveMap({ stickId, onLocationUpdate, onStatusChange, onAuthError, onBat
             }
             
         } catch (error) {
-            console.error("Error fetching history:", error.response?.status || error.message);
+            console.error("Error fetching history:", error.response ? `${error.response.status} - ${error.response.data.message}` : error.message);
             setPathHistory([]); 
-            if (onStatusChange) onStatusChange(false);
+            // Don't set status to offline here, as it might just be a history-specific API issue.
         }
-    }, [stickId, onStatusChange, startDate, endDate]);
+    }, [stickId, startDate, endDate]);
 
     // --- 3. Emergency Clear Handler ---
     const handleClearEmergency = async () => {
@@ -307,7 +308,7 @@ function LiveMap({ stickId, onLocationUpdate, onStatusChange, onAuthError, onBat
 
         // Listen for connection events to manage "Reconnecting" state
         socket.on('connect', () => {
-            if (onReconnecting) onReconnecting(false);
+            setIsReconnecting(false);
             
             if (hasDisconnected) {
                 toast.success("Connection Restored 🟢");
@@ -317,16 +318,16 @@ function LiveMap({ stickId, onLocationUpdate, onStatusChange, onAuthError, onBat
 
         socket.on('disconnect', () => {
             hasDisconnected = true;
-            if (onReconnecting) onReconnecting(true);
-            if (onStatusChange) onStatusChange(false); // Immediately show OFFLINE when socket drops
+            setIsReconnecting(true);
+            setIsLive(false); // Immediately show OFFLINE when socket drops
         });
 
         // Handle connection errors (e.g., authentication failure)
         socket.on('connect_error', (err) => {
-            if (onReconnecting) onReconnecting(true);
+            setIsReconnecting(true);
             
             if (err.message === 'Authentication error') {
-                if (onAuthError) onAuthError();
+                handleLogout();
             }
         });
 
@@ -338,7 +339,7 @@ function LiveMap({ stickId, onLocationUpdate, onStatusChange, onAuthError, onBat
         // Listen for real-time updates
         socket.on('locationUpdate', (data) => {
             lastUpdateTimestampRef.current = Date.now();
-            if (onStatusChange) onStatusChange(true); // Real-time data means it's online
+            setIsLive(true); // Real-time data means it's online
 
             if (data && data.location && data.location.coordinates) {
                 const [lng, lat] = data.location.coordinates;
@@ -356,10 +357,9 @@ function LiveMap({ stickId, onLocationUpdate, onStatusChange, onAuthError, onBat
                 // Append new point to history (Polyline)
                 setPathHistory(prev => [...prev, { lat: newPos.lat, lng: newPos.lng, time: data.timestamp }]);
                 
-                if (onLocationUpdate) onLocationUpdate(data.timestamp); // Send raw timestamp for calculation
-                if (data.batteryLevel !== undefined && onBatteryUpdate) {
-                    onBatteryUpdate({ level: data.batteryLevel, isCharging: data.isCharging });
-                }
+                setLastUpdate(data.timestamp); // Send raw timestamp for calculation
+                
+                setBatteryStatus({ level: data.batteryLevel, isCharging: data.isCharging });
 
                 if (data.emergency) {
                     setIsEmergency(true);
@@ -371,19 +371,19 @@ function LiveMap({ stickId, onLocationUpdate, onStatusChange, onAuthError, onBat
         return () => {
             socket.disconnect();
         };
-    }, [stickId, onLocationUpdate, onStatusChange, onAuthError, onBatteryUpdate, onReconnecting]);
+    }, [stickId, API_URL, setLastUpdate, setIsLive, handleLogout, setBatteryStatus, setIsReconnecting]);
 
     // --- Effect 3: Watchdog Timer for Offline Detection ---
     useEffect(() => {
         const interval = setInterval(() => {
             const timeSinceLastUpdate = Date.now() - lastUpdateTimestampRef.current;
             // Consider offline if no data for 60 seconds (ESP32 sends every 10s)
-            if (timeSinceLastUpdate > 60000) {
-                if (onStatusChange) onStatusChange(false);
+            if (lastUpdateTimestampRef.current > 0 && timeSinceLastUpdate > 60000) {
+                setIsLive(false);
             }
         }, 5000); // Check every 5 seconds
         return () => clearInterval(interval);
-    }, [onStatusChange]);
+    }, [setIsLive]);
 
     // --- 2.5 Advanced Marker Management ---
     useEffect(() => {
