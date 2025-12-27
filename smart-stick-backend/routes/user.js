@@ -131,6 +131,43 @@ router.put('/change-password', auth, async (req, res) => {
     }
 });
 
+// PUT /api/user/change-email
+// Desc: Change user email
+router.put('/change-email', auth, async (req, res) => {
+    const { currentPassword, newEmail } = req.body;
+
+    if (!currentPassword || !newEmail) {
+        return res.status(400).json({ msg: 'Please provide current password and new email.' });
+    }
+
+    try {
+        const user = await User.findById(req.user.userId);
+        if (!user) {
+            return res.status(404).json({ msg: 'User not found' });
+        }
+
+        // Check password
+        const isMatch = await bcrypt.compare(currentPassword, user.password);
+        if (!isMatch) {
+            return res.status(400).json({ msg: 'Invalid current password.' });
+        }
+
+        // Check if email is taken
+        const emailExists = await User.findOne({ email: newEmail });
+        if (emailExists && emailExists._id.toString() !== req.user.userId) {
+             return res.status(400).json({ msg: 'Email is already in use.' });
+        }
+
+        user.email = newEmail;
+        await user.save();
+
+        res.json({ msg: 'Email updated successfully.' });
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server Error');
+    }
+});
+
 // PUT /api/user/fcm-token
 // Desc: Update user's FCM token for push notifications
 router.put('/fcm-token', auth, async (req, res) => {

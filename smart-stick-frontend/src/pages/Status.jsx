@@ -27,13 +27,31 @@ const Status = () => {
   const timeAgo = lastUpdate ? `${Math.max(0, Math.floor((currentTime - new Date(lastUpdate).getTime()) / 60000))}m ago` : 'N/A';
 
   const formatUptime = (milliseconds) => {
-    if (!milliseconds && milliseconds !== 0) return 'N/A';
-    const seconds = Math.floor(milliseconds / 1000);
-    const minutes = Math.floor(seconds / 60);
-    const hours = Math.floor(minutes / 60);
-    const days = Math.floor(hours / 24);
+    if (milliseconds === null || milliseconds === undefined || milliseconds < 0) {
+      return 'N/A';
+    }
+    if (milliseconds < 1000) {
+      return 'Just now';
+    }
 
-    return `${days}d ${hours % 24}h ${minutes % 60}m`;
+    const totalSeconds = Math.floor(milliseconds / 1000);
+    const days = Math.floor(totalSeconds / 86400);
+    const hours = Math.floor((totalSeconds % 86400) / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+
+    const parts = [];
+    if (days > 0) parts.push(`${days} day${days > 1 ? 's' : ''}`);
+    if (hours > 0) parts.push(`${hours} hour${hours > 1 ? 's' : ''}`);
+    if (minutes > 0) parts.push(`${minutes} minute${minutes > 1 ? 's' : ''}`);
+    
+    if (parts.length === 0 && seconds > 0) {
+        parts.push(`${seconds} second${seconds > 1 ? 's' : ''}`);
+    }
+
+    if (parts.length === 0) return 'Just now';
+
+    return parts.slice(0, 2).join(', ');
   };
 
   const statusCardStyle = {
