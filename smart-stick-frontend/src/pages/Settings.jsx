@@ -159,7 +159,7 @@ const Settings = () => {
           </form>
         ) : (
           <button onClick={() => setIsChangeEmailVisible(true)} style={{...buttonStyle, width: 'auto', marginTop: '10px'}}>
-            <FaPencilAlt style={{ marginRight: '8px' }} /> Email
+            <FaPencilAlt style={{ marginRight: '8px' }} /> Change Email
           </button>
         )}
       </div>
@@ -225,7 +225,7 @@ const Settings = () => {
           </form>
         ) : (
           <button onClick={() => setIsChangePasswordVisible(true)} style={{...buttonStyle, width: 'auto', marginTop: '10px'}}>
-            <FaPencilAlt style={{ marginRight: '8px' }} /> Password
+            <FaPencilAlt style={{ marginRight: '8px' }} /> Change Password
           </button>
         )}
       </div>
