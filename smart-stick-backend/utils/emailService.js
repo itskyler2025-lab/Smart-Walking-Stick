@@ -19,7 +19,8 @@ const transporter = nodemailer.createTransport({
     },
     connectionTimeout: 30000, // Increased to 30 seconds
     greetingTimeout: 30000,
-    socketTimeout: 30000
+    socketTimeout: 30000,
+    family: 4 // Force IPv4 to avoid IPv6 connection timeouts on some cloud providers
 });
 
 // Cache the email template in memory at startup to avoid blocking file I/O during requests
