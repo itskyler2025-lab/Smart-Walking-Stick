@@ -17,7 +17,9 @@ const transporter = nodemailer.createTransport({
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS
     },
-    connectionTimeout: 10000 // 10 seconds
+    connectionTimeout: 30000, // Increased to 30 seconds
+    greetingTimeout: 30000,
+    socketTimeout: 30000
 });
 
 // Cache the email template in memory at startup to avoid blocking file I/O during requests
@@ -65,11 +67,23 @@ const sendEmergencyEmail = async (toEmail, stickId, lat, lng, timezone = 'UTC') 
         subject: `🚨 EMERGENCY ALERT: Smart Stick ${stickId}`,
         html: htmlTemplate
     };
-    try {
-        await transporter.sendMail(mailOptions);
-        console.log(`Emergency email sent to ${toEmail}`);
-    } catch (error) {
-        console.error('Error sending email:', error);
+
+    const maxRetries = 3;
+    const retryDelay = 2000; // 2 seconds
+
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+            await transporter.sendMail(mailOptions);
+            console.log(`Emergency email sent to ${toEmail}`);
+            return; // Success, exit function
+        } catch (error) {
+            console.error(`Error sending email (Attempt ${attempt}/${maxRetries}):`, error.message);
+            if (attempt < maxRetries) {
+                await new Promise(resolve => setTimeout(resolve, retryDelay));
+            } else {
+                console.error('Max retries reached. Failed to send emergency email.');
+            }
+        }
     }
 };
 
