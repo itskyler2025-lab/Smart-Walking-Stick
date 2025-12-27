@@ -74,7 +74,7 @@ const topContentGridStyle = {
 const libraries = ['marker'];
 
 function LiveMap() {
-    const { stickId, setLastUpdate, setIsLive, handleLogout, setBatteryStatus, setIsReconnecting, API_URL } = useAppContext();
+    const { stickId, setLastUpdate, setIsLive, handleLogout, setBatteryStatus, setIsReconnecting, API_URL, setConnectionType, setUptime } = useAppContext();
     const [currentLocation, setCurrentLocation] = useState(null);
     const [pathHistory, setPathHistory] = useState([]); 
     const [mapCenter, setMapCenter] = useState(defaultCenter);
@@ -171,6 +171,8 @@ function LiveMap() {
             setLastUpdate(data.timestamp); // Send raw timestamp for calculation
             
             setBatteryStatus({ level: data.batteryLevel, isCharging: data.isCharging });
+            setConnectionType(data.connectionType);
+            setUptime(data.uptime);
             
             
             // Check if the latest data has emergency flag
@@ -183,7 +185,7 @@ function LiveMap() {
             setIsLive(false);
             setIsInitialLoad(false); // Initial load attempt is complete
         }
-    }, [stickId, setLastUpdate, setIsLive, setBatteryStatus]);
+    }, [stickId, setLastUpdate, setIsLive, setBatteryStatus, setConnectionType, setUptime]);
 
 
     // --- 2. Fetch Path History (Robust Error Handling) ---
@@ -355,11 +357,13 @@ function LiveMap() {
                 }
                 
                 // Append new point to history (Polyline)
-                setPathHistory(prev => [...prev, { lat: newPos.lat, lng: newPos.lng, time: data.timestamp }]);
+                setPathHistory(prev => [...prev, { lat: newPos.lat, lng: newPos.lng, time: data.timestamp }].slice(-500));
                 
                 setLastUpdate(data.timestamp); // Send raw timestamp for calculation
                 
                 setBatteryStatus({ level: data.batteryLevel, isCharging: data.isCharging });
+                setConnectionType(data.connectionType);
+                setUptime(data.uptime);
 
                 if (data.emergency) {
                     setIsEmergency(true);
@@ -371,7 +375,7 @@ function LiveMap() {
         return () => {
             socket.disconnect();
         };
-    }, [stickId, API_URL, setLastUpdate, setIsLive, handleLogout, setBatteryStatus, setIsReconnecting]);
+    }, [stickId, API_URL, setLastUpdate, setIsLive, handleLogout, setBatteryStatus, setIsReconnecting, setConnectionType, setUptime]);
 
     // --- Effect 3: Watchdog Timer for Offline Detection ---
     useEffect(() => {

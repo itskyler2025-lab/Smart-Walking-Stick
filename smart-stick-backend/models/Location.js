@@ -34,6 +34,13 @@ const LocationSchema = new mongoose.Schema({
         type: Boolean,
         default: false
     },
+    connectionType: {
+        type: String,
+        default: 'Unknown'
+    },
+    uptime: {
+        type: Number
+    },
     timestamp: {
         type: Date,
         default: Date.now

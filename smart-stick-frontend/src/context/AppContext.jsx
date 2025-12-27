@@ -12,6 +12,8 @@ export const AppProvider = ({ children }) => {
     const [isLive, setIsLive] = useState(true);
     const [isReconnecting, setIsReconnecting] = useState(false);
     const [batteryStatus, setBatteryStatus] = useState({ level: null, isCharging: false });
+    const [connectionType, setConnectionType] = useState(null);
+    const [uptime, setUptime] = useState(null);
     const [currentTime, setCurrentTime] = useState(Date.now());
     const navigate = useNavigate();
 
@@ -51,6 +53,8 @@ export const AppProvider = ({ children }) => {
         isLive,
         isReconnecting,
         batteryStatus,
+        connectionType,
+        uptime,
         currentTime,
         API_URL: baseURL,
         handleLogin,
@@ -59,6 +63,8 @@ export const AppProvider = ({ children }) => {
         setIsLive,
         setIsReconnecting,
         setBatteryStatus,
+        setConnectionType,
+        setUptime,
     };
 
     return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

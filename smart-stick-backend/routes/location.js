@@ -19,7 +19,7 @@ module.exports = function(io) {
                 return res.status(401).json({ message: 'Unauthorized: Invalid API Key' });
             }
 
-            const { stickId, latitude, longitude, batteryLevel, isCharging, obstacleDetected, emergency } = req.body;
+            const { stickId, latitude, longitude, batteryLevel, isCharging, obstacleDetected, emergency, connectionType, uptime } = req.body;
             
             console.log(`[DATA RECEIVED] Stick: ${stickId} | Lat: ${latitude} | Lng: ${longitude} | Bat: ${batteryLevel}% | Chg: ${isCharging}`);
 
@@ -66,6 +66,8 @@ module.exports = function(io) {
                 isCharging,
                 obstacleDetected,
                 emergency: finalEmergencyState,
+                connectionType,
+                uptime,
                 location: {
                     type: 'Point',
                     coordinates: [longitude, latitude]

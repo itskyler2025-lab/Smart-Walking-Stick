@@ -802,8 +802,8 @@ void sendData() {
     jsonPayload += String("\"obstacleDetected\":") + (isObstacle ? "true" : "false") + ",";
     jsonPayload += String("\"emergency\":") + (isEmergency ? "true" : "false") + ",";
     jsonPayload += String("\"isCharging\":") + (digitalRead(USB_DETECT_PIN) ? "true" : "false") + ",";
-    jsonPayload += "\"batteryLevel\":" + String(getBatteryLevel()); 
-    jsonPayload += "}";
+    jsonPayload += "\"uptime\":" + String(millis()) + ",";
+    jsonPayload += "\"batteryLevel\":" + String(getBatteryLevel());
 
     // --- 3. Attempt Wi-Fi Transmission ---
     bool wifi_success = false;
@@ -817,7 +817,7 @@ void sendData() {
         http.addHeader("x-api-key", apiKey);
 
         Serial.println("Attempting Wi-Fi transmission...");
-        int httpCode = http.POST(jsonPayload);
+        int httpCode = http.POST(jsonPayload + ",\"connectionType\":\"WiFi\"}");
         
         // Only consider 2xx status codes as success (e.g., 200 OK, 201 Created)
         if (httpCode >= 200 && httpCode < 300) {
@@ -848,7 +848,7 @@ void sendData() {
     if (!wifi_success) {
         Serial.println("Wi-Fi failed/disconnected. Initiating Cellular GPRS Failover...");
         
-        if (sendDataGPRS(jsonPayload)) {
+        if (sendDataGPRS(jsonPayload + ",\"connectionType\":\"Cellular\"}")) {
             Serial.println("Data sent successfully via GPRS.");
         } else {
             Serial.println("Data transmission FAILED via both Wi-Fi and GPRS.");

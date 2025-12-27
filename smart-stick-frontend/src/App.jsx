@@ -6,8 +6,9 @@ import LiveMap from './components/LiveMap';
 import Login from './pages/Login';
 import Register from './pages/Register'; 
 import ResetPassword from './pages/ResetPassword';
-import Settings from './pages/Settings';
-import { FaUnlink, FaBatteryFull, FaBatteryThreeQuarters, FaBatteryHalf, FaBatteryQuarter, FaBatteryEmpty, FaBolt, FaCog, FaMapMarkedAlt } from 'react-icons/fa';
+import Settings from './pages/Settings'; 
+import Status from './pages/Status';
+import { FaUnlink, FaBatteryFull, FaBatteryThreeQuarters, FaBatteryHalf, FaBatteryQuarter, FaBatteryEmpty, FaBolt, FaCog, FaMapMarkedAlt, FaSignal } from 'react-icons/fa';
 import { TailSpin } from 'react-loader-spinner';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -119,6 +120,10 @@ const AuthenticatedLayout = () => {
               <FaCog />
               {!isMobile && 'Settings'}
             </NavLink>
+            <NavLink to="/status" style={navLinkStyle}>
+              <FaSignal />
+              {!isMobile && 'Status'}
+            </NavLink>
           </nav>
           
           <div title={batteryStatus.isCharging ? "Charging" : "Battery Level"} className={batteryStatus.level !== null && batteryStatus.level < 20 && !batteryStatus.isCharging ? "low-battery-pulse" : ""} style={{ display: 'flex', alignItems: 'center', backgroundColor: 'rgba(255, 255, 255, 0.1)', padding: '6px 14px', borderRadius: '20px', border: `1px solid ${getBatteryColor(batteryStatus.level, batteryStatus.isCharging)}`, transition: 'all 0.3s ease', boxShadow: batteryStatus.level !== null && batteryStatus.level < 20 && !batteryStatus.isCharging ? '0 0 8px rgba(231, 76, 60, 0.4)' : 'none' }}>
@@ -184,6 +189,7 @@ function App() {
       }>
         <Route index element={<LiveMap />} />
         <Route path="settings" element={<Settings />} />
+        <Route path="status" element={<Status />} />
         <Route path="*" element={<Navigate to="/" />} />
       </Route>
     </Routes>
