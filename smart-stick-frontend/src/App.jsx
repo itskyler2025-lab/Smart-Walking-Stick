@@ -1,11 +1,10 @@
 // src/App.js
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Routes, Route, Navigate, useNavigate, useParams, Link, useLocation } from 'react-router-dom';
+import { Routes, Route, Navigate, useNavigate, useParams } from 'react-router-dom';
 import LiveMap from './components/LiveMap';
 import Login from './pages/Login';
 import Register from './pages/Register'; 
-import Settings from './pages/Settings';
 import ResetPassword from './pages/ResetPassword';
 import { FaRegClock, FaUnlink, FaBatteryFull, FaBatteryThreeQuarters, FaBatteryHalf, FaBatteryQuarter, FaBatteryEmpty, FaBolt } from 'react-icons/fa';
 import { TailSpin } from 'react-loader-spinner';
@@ -32,31 +31,6 @@ const ResetPasswordPage = () => {
   const { token } = useParams();
   const navigate = useNavigate();
   return <ResetPassword token={token} onResetSuccess={() => navigate('/login')} />;
-};
-
-// --- NavLink Component for Hover Effects ---
-const NavLink = ({ to, children }) => {
-  const location = useLocation();
-  const [isHovered, setIsHovered] = useState(false);
-  const isActive = location.pathname === to;
-
-  return (
-    <Link 
-      to={to} 
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-      style={{ 
-        color: isHovered ? '#00ADB5' : '#EEEEEE', 
-        textDecoration: 'none', 
-        fontWeight: 'bold', 
-        fontSize: '0.9em', 
-        paddingBottom: '4px',
-        borderBottom: isActive ? '2px solid #00ADB5' : '2px solid transparent',
-        transition: 'all 0.2s ease-in-out'
-      }}>
-      {children}
-    </Link>
-  );
 };
 
 function App() {
@@ -131,11 +105,8 @@ function App() {
     return <FaBatteryEmpty />;
   };
 
-  // --- Authenticated Layout Component ---
-  // This component now wraps any page that requires authentication.
-  // It accepts 'children' to render the specific page content (e.g., LiveMap or Settings).
-  const AuthenticatedLayout = ({ children }) => {
-    return (
+  // --- Authenticated Layout ---
+  const AuthenticatedLayout = (
       <div className="App" style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #222831 0%, #393E46 100%)', backgroundAttachment: 'fixed' }}>
         
         {/* Responsive Header (Dark Contrast) */}
@@ -236,12 +207,6 @@ function App() {
                 </span>
             </div>
 
-            {/* Navigation Bar */}
-            <nav style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
-              <NavLink to="/">Dashboard</NavLink>
-              <NavLink to="/settings">Settings</NavLink>
-            </nav>
-
             {/* Logout Button (High contrast, clearly visible action) */}
             <button 
               onClick={handleLogout} 
@@ -264,10 +229,7 @@ function App() {
             </button>
           </div>
         </header>
-        
-        {/* This is where the page content (LiveMap or Settings) will be rendered */}
-        {children}
-
+        <LiveMap stickId={stickId} onLocationUpdate={setLastUpdate} onStatusChange={setIsLive} onAuthError={handleLogout} onBatteryUpdate={setBatteryStatus} onReconnecting={setIsReconnecting} />
         <ToastContainer 
           position="bottom-right"
           autoClose={5000}
@@ -281,7 +243,7 @@ function App() {
         />
       </div>
     );
-  };
+
   return (
     <Routes>
       <Route path="/login" element={
@@ -291,20 +253,8 @@ function App() {
         !isAuthenticated ? <AuthWrapper><Register onRegisterSuccess={() => navigate('/login')} /></AuthWrapper> : <Navigate to="/" />
       } />
       <Route path="/resetpassword/:token" element={<AuthWrapper><ResetPasswordPage /></AuthWrapper>} />
-      
-      {/* Main dashboard route now uses the layout component */}
       <Route path="/" element={
-        isAuthenticated 
-          ? <AuthenticatedLayout>
-              <LiveMap stickId={stickId} onLocationUpdate={setLastUpdate} onStatusChange={setIsLive} onAuthError={handleLogout} onBatteryUpdate={setBatteryStatus} onReconnecting={setIsReconnecting} />
-            </AuthenticatedLayout> 
-          : <Navigate to="/login" />
-      } />
-      {/* New settings route, also protected by the layout */}
-      <Route path="/settings" element={
-        isAuthenticated 
-          ? <AuthenticatedLayout><Settings /></AuthenticatedLayout> 
-          : <Navigate to="/login" />
+        isAuthenticated ? AuthenticatedLayout : <Navigate to="/login" />
       } />
     </Routes>
   );
