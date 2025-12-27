@@ -117,7 +117,7 @@ const Settings = () => {
       <h2 style={{ color: '#00ADB5', borderBottom: '1px solid #00ADB5', paddingBottom: '10px', display: 'flex', alignItems: 'center', gap: '10px' }}><FaCog /> Settings</h2>
       
       <div style={{ marginTop: '30px' }}>
-        <h3 style={{ color: '#EEEEEE', display: 'flex', alignItems: 'center', gap: '10px' }}><FaEnvelope /> Change Email</h3>
+        <h3 style={{ color: '#EEEEEE', display: 'flex', alignItems: 'center', gap: '10px' }}><FaEnvelope /> Email</h3>
         
         {isChangeEmailVisible ? (
           <form onSubmit={onEmailSubmit}>
@@ -159,13 +159,13 @@ const Settings = () => {
           </form>
         ) : (
           <button onClick={() => setIsChangeEmailVisible(true)} style={{...buttonStyle, width: 'auto', marginTop: '10px'}}>
-            <FaPencilAlt style={{ marginRight: '8px' }} /> Change Email
+            <FaPencilAlt style={{ marginRight: '8px' }} /> Email
           </button>
         )}
       </div>
 
       <div style={{ marginTop: '30px' }}>
-        <h3 style={{ color: '#EEEEEE', display: 'flex', alignItems: 'center', gap: '10px' }}><FaLock /> Change Password</h3>
+        <h3 style={{ color: '#EEEEEE', display: 'flex', alignItems: 'center', gap: '10px' }}><FaLock /> Password</h3>
         
         {isChangePasswordVisible ? (
           <form onSubmit={onSubmit}>
@@ -225,7 +225,7 @@ const Settings = () => {
           </form>
         ) : (
           <button onClick={() => setIsChangePasswordVisible(true)} style={{...buttonStyle, width: 'auto', marginTop: '10px'}}>
-            <FaPencilAlt style={{ marginRight: '8px' }} /> Change Password
+            <FaPencilAlt style={{ marginRight: '8px' }} /> Password
           </button>
         )}
       </div>
