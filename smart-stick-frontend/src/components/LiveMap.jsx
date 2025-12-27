@@ -1,7 +1,7 @@
 // src/components/LiveMap.js
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { GoogleMap, Polyline, useLoadScript, OverlayView } from '@react-google-maps/api';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { GoogleMap, Polyline, useLoadScript, OverlayView, Marker } from '@react-google-maps/api';
 import UserInfo from './UserInfo';
 import { GOOGLE_MAPS_API_KEY, GOOGLE_MAPS_MAP_ID } from '../utils/config';
 import { io } from 'socket.io-client';
@@ -90,8 +90,6 @@ function LiveMap() {
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
     
-    const [groupedHistory, setGroupedHistory] = useState({});
-
     // Ref to track last update time for offline detection
     const lastUpdateTimestampRef = useRef(0);
 
@@ -247,11 +245,14 @@ function LiveMap() {
         }
     };
 
-    // --- 3.6 History Item Click Handler ---
-    const handleHistoryItemClick = (point) => {
-        setMapCenter({ lat: point.lat, lng: point.lng });
-        setMapZoom(20); // Zoom in close to the selected point
-        setIsFollowing(false); // Stop following live updates so user can inspect this point
+    // --- 3.6 Route Click Handler ---
+    const handleRouteClick = (routePoints) => {
+        if (!mapRef.current || !routePoints || routePoints.length === 0) return;
+        
+        const bounds = new google.maps.LatLngBounds();
+        routePoints.forEach(point => bounds.extend({ lat: point.lat, lng: point.lng }));
+        mapRef.current.fitBounds(bounds);
+        setIsFollowing(false);
     };
 
     // --- 4. Emergency Sound Loop ---
@@ -272,21 +273,31 @@ function LiveMap() {
         fetchPathHistory(); 
     }, [fetchLatestLocation, fetchPathHistory]);
 
-    // --- New Effect for Grouping History ---
-    useEffect(() => {
-        const grouped = pathHistory.reduce((acc, point) => {
-            // 'en-CA' gives a YYYY-MM-DD format which is great for sorting
-            const date = new Date(point.time);
-            // Adjust for timezone to prevent grouping across midnight UTC
-            const dateKey = new Date(date.getFullYear(), date.getMonth(), date.getDate()).toISOString().split('T')[0];
+    // --- Derived State: Group History into Routes ---
+    const routes = useMemo(() => {
+        if (!pathHistory.length) return [];
+        
+        // Sort by time ascending first to build routes correctly
+        const sortedPoints = [...pathHistory].sort((a, b) => new Date(a.time) - new Date(b.time));
+        const calculatedRoutes = [];
+        let currentRoute = [sortedPoints[0]];
 
-            if (!acc[dateKey]) {
-                acc[dateKey] = [];
+        for (let i = 1; i < sortedPoints.length; i++) {
+            const prevPoint = sortedPoints[i - 1];
+            const currentPoint = sortedPoints[i];
+            const timeDiff = new Date(currentPoint.time) - new Date(prevPoint.time);
+
+            // If gap is larger than 10 minutes, consider it a new route/trip
+            if (timeDiff > 10 * 60 * 1000) {
+                calculatedRoutes.push(currentRoute);
+                currentRoute = [];
             }
-            acc[dateKey].push(point);
-            return acc;
-        }, {});
-        setGroupedHistory(grouped);
+            currentRoute.push(currentPoint);
+        }
+        calculatedRoutes.push(currentRoute);
+        
+        // Return routes reversed (newest first)
+        return calculatedRoutes.reverse();
     }, [pathHistory]);
 
     // Effect 2: Socket.io Connection
@@ -538,16 +549,46 @@ function LiveMap() {
                             }}
                         >
                             {/* 1. Location History Path (Polyline) */}
-                            {pathHistory.length > 0 && (
-                                <Polyline 
-                                    path={pathHistory} 
-                                    options={{ 
-                                        strokeColor: '#e74c3c', 
-                                        strokeOpacity: 0.7,
-                                        strokeWeight: 4,
-                                    }}
-                                />
-                            )}
+                            {routes.map((route, index) => (
+                                <React.Fragment key={index}>
+                                    <Polyline 
+                                        path={route} 
+                                        options={{ 
+                                            strokeColor: index === 0 ? '#e74c3c' : '#95a5a6', // Highlight latest route in red, older in grey
+                                            strokeOpacity: index === 0 ? 0.8 : 0.5,
+                                            strokeWeight: 4,
+                                        }}
+                                    />
+                                    {/* Start Marker (Green) */}
+                                    <Marker
+                                        position={route[0]}
+                                        icon={{
+                                            path: "M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z",
+                                            fillColor: "#2ecc71",
+                                            fillOpacity: 1,
+                                            strokeWeight: 1,
+                                            strokeColor: "#ffffff",
+                                            scale: 1.2,
+                                            anchor: new google.maps.Point(12, 22),
+                                        }}
+                                        title={`Start: ${new Date(route[0].time).toLocaleTimeString()}`}
+                                    />
+                                    {/* End Marker (Red) */}
+                                    <Marker
+                                        position={route[route.length - 1]}
+                                        icon={{
+                                            path: "M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z",
+                                            fillColor: "#e74c3c",
+                                            fillOpacity: 1,
+                                            strokeWeight: 1,
+                                            strokeColor: "#ffffff",
+                                            scale: 1.2,
+                                            anchor: new google.maps.Point(12, 22),
+                                        }}
+                                        title={`End: ${new Date(route[route.length - 1].time).toLocaleTimeString()}`}
+                                    />
+                                </React.Fragment>
+                            ))}
                             
                             {/* 3. Emergency Pulse Overlay */}
                             {isEmergency && currentLocation && (
@@ -629,9 +670,8 @@ function LiveMap() {
             </div>
 
             <LocationHistory 
-                groupedHistory={groupedHistory} 
-                hasHistory={pathHistory.length > 0} 
-                onSelectPoint={handleHistoryItemClick}
+                routes={routes} 
+                onSelectRoute={handleRouteClick}
             />
         </div>
     );

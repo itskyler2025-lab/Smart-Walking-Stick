@@ -1,7 +1,42 @@
 import React from 'react';
-import { FaListUl, FaMapMarkerAlt } from 'react-icons/fa';
+import { FaListUl, FaRoute, FaClock, FaMapMarkerAlt } from 'react-icons/fa';
 
-const LocationHistory = ({ groupedHistory, hasHistory, onSelectPoint }) => {
+const LocationHistory = ({ routes, onSelectRoute }) => {
+    const formatDuration = (start, end) => {
+        const diff = new Date(end) - new Date(start);
+        const minutes = Math.floor(diff / 60000);
+        if (minutes < 60) return `${minutes} min`;
+        const hours = Math.floor(minutes / 60);
+        const mins = minutes % 60;
+        return `${hours}h ${mins}m`;
+    };
+
+    const calculateDistance = (route) => {
+        if (!route || route.length < 2) return '0 m';
+        
+        let totalDistance = 0;
+        const R = 6371e3; // Earth radius in meters
+        const toRad = Math.PI / 180;
+
+        for (let i = 0; i < route.length - 1; i++) {
+            const lat1 = route[i].lat * toRad;
+            const lat2 = route[i+1].lat * toRad;
+            const deltaLat = (route[i+1].lat - route[i].lat) * toRad;
+            const deltaLng = (route[i+1].lng - route[i].lng) * toRad;
+
+            const a = Math.sin(deltaLat/2) * Math.sin(deltaLat/2) +
+                      Math.cos(lat1) * Math.cos(lat2) *
+                      Math.sin(deltaLng/2) * Math.sin(deltaLng/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+
+            totalDistance += R * c;
+        }
+
+        return totalDistance > 1000 
+            ? `${(totalDistance / 1000).toFixed(2)} km` 
+            : `${Math.round(totalDistance)} m`;
+    };
+
     return (
         <div style={{ minWidth: 0, marginTop: '15px', width: '100%' }}> 
             <div style={{ 
@@ -22,70 +57,57 @@ const LocationHistory = ({ groupedHistory, hasHistory, onSelectPoint }) => {
                     <FaListUl style={{ marginRight: '10px', verticalAlign: 'middle', color: '#e74c3c' }} /> Location History
                 </h3>
 
-                {!hasHistory && (
+                {(!routes || routes.length === 0) && (
                     <p style={{ color: '#EEEEEE', opacity: 0.7 }}>No historical data available yet. Ensure the ESP32 is sending data.</p>
                 )}
                 
                 <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
                     <ul style={{ listStyleType: 'none', padding: 0, margin: 0 }}>
-                        {Object.keys(groupedHistory).sort().reverse().map(dateKey => (
-                            <li key={dateKey}>
-                                <h4 style={{
-                                    color: '#EEEEEE',
-                                    backgroundColor: '#222831',
-                                    padding: '8px 10px',
-                                    margin: '10px 0 5px 0',
-                                    borderRadius: '4px',
-                                    fontSize: '1.1em',
-                                    fontWeight: 'bold',
-                                    position: 'sticky',
-                                    top: 0,
-                                    zIndex: 1,
-                                    borderBottom: '1px solid #00ADB5'
-                                }}>
-                                    {new Date(dateKey + 'T00:00:00').toLocaleDateString('en-US', {
-                                        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
-                                    })}
-                                </h4>
-                                <ul style={{ listStyleType: 'none', paddingLeft: '10px', position: 'relative' }}>
-                                    {groupedHistory[dateKey].slice().reverse().map((point, index, arr) => (
-                                        <li key={`${dateKey}-${index}`} style={{ 
-                                            padding: '0 0 20px 20px', 
-                                            position: 'relative',
-                                            // Draw vertical line for all items except the last one in the group
-                                            borderLeft: index !== arr.length - 1 ? '2px solid #4a5568' : '2px solid transparent', 
-                                            marginLeft: '10px'
-                                        }}>
-                                            {/* Timeline Dot */}
-                                            <div style={{
-                                                position: 'absolute', left: '-6px', top: '0',
-                                                width: '10px', height: '10px', borderRadius: '50%',
-                                                backgroundColor: '#00ADB5', border: '2px solid #393E46'
-                                            }} />
-                                            
-                                            {/* Content */}
-                                            <div style={{ marginTop: '-5px' }}>
-                                                <strong style={{ color: '#EEEEEE', fontSize: '0.95em' }}>
-                                                    {new Date(point.time).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
-                                                </strong>
-                                                {/* Replaced raw coordinates with a functional link */}
-                                                <div 
-                                                    onClick={() => onSelectPoint && onSelectPoint(point)}
-                                                    style={{ 
-                                                        fontSize: '0.85em', color: '#00ADB5', marginTop: '2px', 
-                                                        cursor: 'pointer', display: 'flex', alignItems: 'center',
-                                                        width: 'fit-content'
-                                                    }}
-                                                    title={`Lat: ${point.lat.toFixed(5)}, Lng: ${point.lng.toFixed(5)}`}
-                                                >
-                                                    <FaMapMarkerAlt style={{ marginRight: '4px' }} /> View Location
-                                                </div>
-                                            </div>
-                                        </li>
-                                    ))}
-                                </ul>
-                            </li>
-                        ))}
+                        {routes.map((route, index) => {
+                            const startTime = new Date(route[0].time);
+                            const endTime = new Date(route[route.length - 1].time);
+                            const isLatest = index === 0;
+
+                            return (
+                                <li key={index} style={{ 
+                                    marginBottom: '10px', 
+                                    backgroundColor: '#222831', 
+                                    borderRadius: '8px', 
+                                    padding: '12px',
+                                    borderLeft: isLatest ? '4px solid #e74c3c' : '4px solid #95a5a6',
+                                    cursor: 'pointer',
+                                    transition: 'background-color 0.2s'
+                                }}
+                                onClick={() => onSelectRoute(route)}
+                                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#2C3440'}
+                                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#222831'}
+                                >
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '5px' }}>
+                                        <span style={{ fontWeight: 'bold', color: '#EEEEEE', fontSize: '1em' }}>
+                                            {startTime.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                                        </span>
+                                        <span style={{ fontSize: '0.85em', color: isLatest ? '#e74c3c' : '#95a5a6', fontWeight: 'bold' }}>
+                                            {isLatest ? 'LATEST TRIP' : `TRIP ${routes.length - index}`}
+                                        </span>
+                                    </div>
+                                    
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '15px', fontSize: '0.9em', color: '#bdc3c7' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center' }}>
+                                            <FaClock style={{ marginRight: '6px', color: '#00ADB5' }} />
+                                            {startTime.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})} - {endTime.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                                        </div>
+                                        <div style={{ display: 'flex', alignItems: 'center' }}>
+                                            <FaRoute style={{ marginRight: '6px', color: '#00ADB5' }} />
+                                            {formatDuration(startTime, endTime)}
+                                        </div>
+                                        <div style={{ display: 'flex', alignItems: 'center' }}>
+                                            <FaMapMarkerAlt style={{ marginRight: '6px', color: '#00ADB5' }} />
+                                            {calculateDistance(route)}
+                                        </div>
+                                    </div>
+                                </li>
+                            );
+                        })}
                     </ul>
                 </div>
             </div>

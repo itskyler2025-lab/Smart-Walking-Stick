@@ -15,6 +15,7 @@ A comprehensive IoT solution designed to enhance the safety and independence of 
 *   **Hardware Status Monitoring**: Real-time battery level and obstacle detection status displayed on the dashboard.
 *   **Over-the-Air (OTA) Firmware Updates**: Securely update the device's firmware remotely from the backend.
 *   **Secure User Authentication**: JWT-based login system to protect sensitive user and location data.
+*   **User Settings Management**: Update profile details, change password, and update email directly from the dashboard.
 *   **Responsive Web Dashboard**: A modern, dark-themed interface built with React, optimized for both desktop and mobile devices.
 
 ## 🏗️ System Architecture
@@ -199,6 +200,8 @@ A brief overview of the main backend API routes.
 ### User & Firmware
 *   `GET /api/user/profile`: **(Protected)** Get the current user's profile information.
 *   `PUT /api/user/profile`: **(Protected)** Update the user's profile.
+*   `PUT /api/user/change-password`: **(Protected)** Change the user's password.
+*   `PUT /api/user/change-email`: **(Protected)** Change the user's email address.
 *   `PUT /api/user/fcm-token`: **(Protected)** Update the user's Firebase Cloud Messaging token.
 *   `GET /api/firmware/update`: **(For ESP32)** Endpoint for the hardware to check for and download new firmware versions.
 
