@@ -1,41 +1,46 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { FaExclamationTriangle } from 'react-icons/fa';
 
 const EmergencyBanner = ({ isEmergency, onClear, isMobile }) => {
+    const [isHovered, setIsHovered] = useState(false);
+
     if (!isEmergency) return null;
 
     return (
         <div style={{
             backgroundColor: '#e74c3c',
             color: 'white',
-            padding: '15px',
+            padding: '15px 25px',
             borderRadius: '8px',
-            marginBottom: '15px',
+            marginBottom: '25px',
             display: 'flex',
             flexDirection: isMobile ? 'column' : 'row',
-            alignItems: 'center',
             justifyContent: 'space-between',
+            alignItems: 'center',
+            gap: '15px',
             boxShadow: '0 4px 15px rgba(231, 76, 60, 0.4)',
-            animation: 'pulse 2s infinite'
+            animation: 'emergency-pulse 2s infinite'
         }}>
-            <div style={{ display: 'flex', alignItems: 'center', marginBottom: isMobile ? '10px' : '0' }}>
-                <span style={{ fontSize: '1.5em', marginRight: '10px' }}>🚨</span>
-                <div>
-                    <strong style={{ fontSize: '1.1em', display: 'block' }}>EMERGENCY ALERT</strong>
-                    <span style={{ fontSize: '0.9em' }}>Panic Button Activated!</span>
-                </div>
+            <div style={{ display: 'flex', alignItems: 'center', fontSize: '1.2em', fontWeight: 'bold' }}>
+                <FaExclamationTriangle style={{ marginRight: '15px', fontSize: '1.5em' }} />
+                <span>EMERGENCY ALERT: Panic Button Pressed!</span>
             </div>
             <button 
                 onClick={onClear}
+                onMouseEnter={() => setIsHovered(true)}
+                onMouseLeave={() => setIsHovered(false)}
                 style={{
-                    backgroundColor: 'white',
+                    backgroundColor: isHovered ? '#f1f1f1' : 'white',
                     color: '#e74c3c',
                     border: 'none',
-                    padding: '10px 20px',
+                    padding: '10px 25px',
                     borderRadius: '5px',
                     fontWeight: 'bold',
                     cursor: 'pointer',
-                    boxShadow: '0 2px 5px rgba(0,0,0,0.2)',
-                    width: isMobile ? '100%' : 'auto'
+                    fontSize: '1em',
+                    whiteSpace: 'nowrap',
+                    transition: 'background-color 0.3s ease, box-shadow 0.3s ease',
+                    boxShadow: isHovered ? '0 4px 8px rgba(0,0,0,0.2)' : 'none'
                 }}
             >
                 Clear Emergency

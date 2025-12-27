@@ -28,12 +28,6 @@ const PORT = process.env.PORT || 5000;
 app.use(helmet());
 app.use(express.json());
 
-// Request Logger - Helps debug 404s by showing exactly what URL was requested
-app.use((req, res, next) => {
-    console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
-    next();
-});
-
 // CORS Configuration:
 // This restricts API access to your frontend's URL.
 const allowedOrigins = [
