@@ -121,10 +121,15 @@ function LiveMap({ stickId, onLocationUpdate, onStatusChange, onAuthError, onBat
     const mapRef = useRef(null);
     const markerRef = useRef(null);
     const animationFrameRef = useRef(null);
-
+ 
     const onMapLoad = useCallback((map) => {
         mapRef.current = map;
         setMapReady(true);
+    }, []);
+
+    const onMapUnmount = useCallback(() => {
+        mapRef.current = null;
+        setMapReady(false);
     }, []);
 
     // Load Google Maps script
@@ -522,6 +527,7 @@ function LiveMap({ stickId, onLocationUpdate, onStatusChange, onAuthError, onBat
                             center={mapCenter}
                             zoom={mapZoom}
                             onLoad={onMapLoad}
+                            onUnmount={onMapUnmount}
                             onDragStart={() => setIsFollowing(false)}
                             onZoomChanged={() => {
                                 if (mapRef.current) {
