@@ -8,8 +8,7 @@ import Register from './pages/Register';
 import ResetPassword from './pages/ResetPassword';
 import Settings from './pages/Settings'; 
 import Status from './pages/Status';
-import { FaUnlink, FaBatteryFull, FaBatteryThreeQuarters, FaBatteryHalf, FaBatteryQuarter, FaBatteryEmpty, FaBolt, FaCog, FaMapMarkedAlt, FaSignal } from 'react-icons/fa';
-import { TailSpin } from 'react-loader-spinner';
+import { FaCog, FaMapMarkedAlt, FaSignal } from 'react-icons/fa';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { useAppContext } from './context/AppContext';
@@ -37,7 +36,7 @@ const ResetPasswordPage = () => {
 };
 
 const AuthenticatedLayout = () => {
-  const { stickId, lastUpdate, isLive, isReconnecting, batteryStatus, handleLogout, currentTime } = useAppContext();
+  const { stickId, handleLogout } = useAppContext();
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
   const [isLogoutHovered, setIsLogoutHovered] = useState(false);
 
@@ -48,24 +47,6 @@ const AuthenticatedLayout = () => {
   }, []);
 
   const isMobile = windowWidth < MOBILE_NAV_BREAKPOINT;
-
-  const getBatteryColor = (level, isCharging) => {
-    if (isCharging) return '#f1c40f'; // Gold color for charging
-    if (level === null || level === undefined) return '#95a5a6';
-    if (level >= 60) return '#2ecc71'; // Green
-    if (level >= 25) return '#f1c40f'; // Yellow
-    return '#e74c3c'; // Red
-  };
-
-  const getBatteryIcon = (level, isCharging) => {
-    if (isCharging) return <FaBolt />;
-    if (level === null || level === undefined) return <FaBatteryEmpty />;
-    if (level >= 90) return <FaBatteryFull />;
-    if (level >= 60) return <FaBatteryThreeQuarters />;
-    if (level >= 35) return <FaBatteryHalf />;
-    if (level >= 10) return <FaBatteryQuarter />;
-    return <FaBatteryEmpty />;
-  };
 
   const navLinkStyle = ({ isActive }) => ({
     color: isActive ? '#00ADB5' : '#EEEEEE',
@@ -125,36 +106,6 @@ const AuthenticatedLayout = () => {
               {!isMobile && 'Status'}
             </NavLink>
           </nav>
-          
-          <div title={batteryStatus.isCharging ? "Charging" : "Battery Level"} className={batteryStatus.level !== null && batteryStatus.level < 20 && !batteryStatus.isCharging ? "low-battery-pulse" : ""} style={{ display: 'flex', alignItems: 'center', backgroundColor: 'rgba(255, 255, 255, 0.1)', padding: '6px 14px', borderRadius: '20px', border: `1px solid ${getBatteryColor(batteryStatus.level, batteryStatus.isCharging)}`, transition: 'all 0.3s ease', boxShadow: batteryStatus.level !== null && batteryStatus.level < 20 && !batteryStatus.isCharging ? '0 0 8px rgba(231, 76, 60, 0.4)' : 'none' }}>
-              <span style={{ color: getBatteryColor(batteryStatus.level, batteryStatus.isCharging), fontSize: '1.2em', marginRight: '8px', display: 'flex', alignItems: 'center' }}>
-                  {getBatteryIcon(batteryStatus.level, batteryStatus.isCharging)}
-              </span>
-              <span style={{ color: '#EEEEEE', fontWeight: 'bold', fontSize: '0.9em' }}>
-                  {batteryStatus.level !== null ? `${batteryStatus.level}%` : '--%'}
-              </span>
-          </div>
-
-          {isLive ? (
-            <div style={{ display: 'flex', alignItems: 'center', backgroundColor: 'rgba(46, 204, 113, 0.1)', padding: '5px 12px', borderRadius: '20px', border: '1px solid #2ecc71' }}>
-                <span className="live-pulse" style={{ height: '8px', width: '8px', backgroundColor: '#2ecc71', borderRadius: '50%', display: 'inline-block', marginRight: '6px' }}></span>
-                <span style={{ color: '#2ecc71', fontWeight: 'bold', fontSize: '0.8em', letterSpacing: '1px' }}>LIVE</span>
-            </div>
-          ) : (
-            <div style={{ display: 'flex', alignItems: 'center', backgroundColor: 'rgba(231, 76, 60, 0.1)', padding: '5px 12px', borderRadius: '20px', border: '1px solid #e74c3c' }}>
-                <FaUnlink style={{ color: '#e74c3c', marginRight: '6px' }} />
-                <span style={{ color: '#e74c3c', fontWeight: 'bold', fontSize: '0.8em', letterSpacing: '1px' }}>
-                  OFFLINE {lastUpdate ? `(${Math.max(0, Math.floor((currentTime - new Date(lastUpdate).getTime()) / 60000))}m ago)` : ''}
-                </span>
-            </div>
-          )}
-
-          {!isLive && isReconnecting && (
-             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <TailSpin color="#f1c40f" height={18} width={18} />
-                <span style={{ color: '#f1c40f', fontSize: '0.8em', fontWeight: 'bold' }}>Reconnecting...</span>
-             </div>
-          )}
           
           <button onClick={handleLogout} onMouseEnter={() => setIsLogoutHovered(true)} onMouseLeave={() => setIsLogoutHovered(false)} style={{ padding: '10px 20px', backgroundColor: isLogoutHovered ? '#c0392b' : '#e74c3c', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer', fontWeight: 'bold', fontSize: '1em', width: isMobile ? '100%' : 'auto', transition: 'background-color 0.3s ease, box-shadow 0.3s ease', boxShadow: isLogoutHovered ? '0 4px 8px rgba(231, 76, 60, 0.4)' : 'none' }}>
             Logout

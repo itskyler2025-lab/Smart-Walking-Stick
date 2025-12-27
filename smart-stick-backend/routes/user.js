@@ -4,6 +4,7 @@ const express = require('express');
 const router = express.Router();
 const auth = require('../middleware/auth');
 const User = require('../models/User');
+const bcrypt = require('bcryptjs');
 
 // GET /api/user/profile
 // Desc: Get current user's profile
@@ -86,6 +87,46 @@ router.put('/profile', auth, async (req, res) => {
             const messages = Object.values(err.errors).map(val => val.message);
             return res.status(400).json({ msg: messages.join(' ') });
         }
+        res.status(500).send('Server Error');
+    }
+});
+
+// PUT /api/user/change-password
+// Desc: Change user password
+router.put('/change-password', auth, async (req, res) => {
+    const { currentPassword, newPassword } = req.body;
+
+    // Basic validation
+    if (!currentPassword || !newPassword) {
+        return res.status(400).json({ msg: 'Please provide current and new passwords.' });
+    }
+
+    if (newPassword.length < 6) {
+        return res.status(400).json({ msg: 'New password must be at least 6 characters long.' });
+    }
+
+    try {
+        // Get user from DB
+        const user = await User.findById(req.user.userId);
+        if (!user) {
+            return res.status(404).json({ msg: 'User not found' });
+        }
+
+        // Check if current password is correct
+        const isMatch = await bcrypt.compare(currentPassword, user.password);
+        if (!isMatch) {
+            return res.status(400).json({ msg: 'Invalid current password.' });
+        }
+
+        // Hash new password
+        const salt = await bcrypt.genSalt(10);
+        user.password = await bcrypt.hash(newPassword, salt);
+
+        await user.save();
+
+        res.json({ msg: 'Password updated successfully.' });
+    } catch (err) {
+        console.error(err.message);
         res.status(500).send('Server Error');
     }
 });

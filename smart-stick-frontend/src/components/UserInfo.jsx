@@ -39,7 +39,9 @@ const MOBILE_BREAKPOINT = 600;
 // Helper function to calculate age from a birthdate string (YYYY-MM-DD)
 const calculateAge = (birthdateString) => {
     if (!birthdateString) return '';
-    const birthDate = new Date(birthdateString);
+    // Parse YYYY-MM-DD explicitly to avoid timezone issues with new Date(string)
+    const [year, month, day] = birthdateString.split('-').map(Number);
+    const birthDate = new Date(year, month - 1, day);
     const today = new Date();
     let age = today.getFullYear() - birthDate.getFullYear();
     const m = today.getMonth() - birthDate.getMonth();
