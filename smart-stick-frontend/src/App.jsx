@@ -7,7 +7,7 @@ import Login from './pages/Login';
 import Register from './pages/Register'; 
 import ResetPassword from './pages/ResetPassword';
 import Settings from './pages/Settings';
-import { FaRegClock, FaUnlink, FaBatteryFull, FaBatteryThreeQuarters, FaBatteryHalf, FaBatteryQuarter, FaBatteryEmpty, FaBolt, FaCog, FaMapMarkedAlt } from 'react-icons/fa';
+import { FaUnlink, FaBatteryFull, FaBatteryThreeQuarters, FaBatteryHalf, FaBatteryQuarter, FaBatteryEmpty, FaBolt, FaCog, FaMapMarkedAlt } from 'react-icons/fa';
 import { TailSpin } from 'react-loader-spinner';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -100,16 +100,6 @@ const AuthenticatedLayout = () => {
             Smart Stick Tracker 
             <span style={{ fontSize: '0.6em', opacity: 0.7, marginLeft: '10px' }}>({stickId})</span>
           </h1>
-          <nav style={{ display: 'flex', gap: '10px' }}>
-            <NavLink to="/" style={navLinkStyle} end>
-              <FaMapMarkedAlt />
-              {!isMobile && 'Map'}
-            </NavLink>
-            <NavLink to="/settings" style={navLinkStyle}>
-              <FaCog />
-              {!isMobile && 'Settings'}
-            </NavLink>
-          </nav>
         </div>
         
         <div style={{ 
@@ -120,12 +110,26 @@ const AuthenticatedLayout = () => {
           width: isMobile ? '100%' : 'auto',
           marginTop: isMobile ? '10px' : '0'
         }}>
-          {lastUpdate && (
-            <span style={{ fontSize: '0.9em', display: 'flex', alignItems: 'center', color: '#EEEEEE', whiteSpace: 'nowrap' }}>
-              <FaRegClock style={{ marginRight: '5px' }} /> Last Update: {new Date(lastUpdate).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-            </span>
-          )}
+          <nav style={{ display: 'flex', gap: '10px' }}>
+            <NavLink to="/" style={navLinkStyle} end>
+              <FaMapMarkedAlt />
+              {!isMobile && 'Map'}
+            </NavLink>
+            <NavLink to="/settings" style={navLinkStyle}>
+              <FaCog />
+              {!isMobile && 'Settings'}
+            </NavLink>
+          </nav>
           
+          <div title={batteryStatus.isCharging ? "Charging" : "Battery Level"} className={batteryStatus.level !== null && batteryStatus.level < 20 && !batteryStatus.isCharging ? "low-battery-pulse" : ""} style={{ display: 'flex', alignItems: 'center', backgroundColor: 'rgba(255, 255, 255, 0.1)', padding: '6px 14px', borderRadius: '20px', border: `1px solid ${getBatteryColor(batteryStatus.level, batteryStatus.isCharging)}`, transition: 'all 0.3s ease', boxShadow: batteryStatus.level !== null && batteryStatus.level < 20 && !batteryStatus.isCharging ? '0 0 8px rgba(231, 76, 60, 0.4)' : 'none' }}>
+              <span style={{ color: getBatteryColor(batteryStatus.level, batteryStatus.isCharging), fontSize: '1.2em', marginRight: '8px', display: 'flex', alignItems: 'center' }}>
+                  {getBatteryIcon(batteryStatus.level, batteryStatus.isCharging)}
+              </span>
+              <span style={{ color: '#EEEEEE', fontWeight: 'bold', fontSize: '0.9em' }}>
+                  {batteryStatus.level !== null ? `${batteryStatus.level}%` : '--%'}
+              </span>
+          </div>
+
           {isLive ? (
             <div style={{ display: 'flex', alignItems: 'center', backgroundColor: 'rgba(46, 204, 113, 0.1)', padding: '5px 12px', borderRadius: '20px', border: '1px solid #2ecc71' }}>
                 <span className="live-pulse" style={{ height: '8px', width: '8px', backgroundColor: '#2ecc71', borderRadius: '50%', display: 'inline-block', marginRight: '6px' }}></span>
@@ -147,15 +151,6 @@ const AuthenticatedLayout = () => {
              </div>
           )}
           
-          <div className={batteryStatus.level !== null && batteryStatus.level < 20 && !batteryStatus.isCharging ? "low-battery-pulse" : ""} style={{ display: 'flex', alignItems: 'center', backgroundColor: 'rgba(255, 255, 255, 0.1)', padding: '6px 14px', borderRadius: '20px', border: `1px solid ${getBatteryColor(batteryStatus.level, batteryStatus.isCharging)}`, transition: 'all 0.3s ease', boxShadow: batteryStatus.level !== null && batteryStatus.level < 20 && !batteryStatus.isCharging ? '0 0 8px rgba(231, 76, 60, 0.4)' : 'none' }}>
-              <span style={{ color: getBatteryColor(batteryStatus.level, batteryStatus.isCharging), fontSize: '1.2em', marginRight: '8px', display: 'flex', alignItems: 'center' }}>
-                  {getBatteryIcon(batteryStatus.level, batteryStatus.isCharging)}
-              </span>
-              <span style={{ color: '#EEEEEE', fontWeight: 'bold', fontSize: '0.9em' }}>
-                  {batteryStatus.level !== null ? `${batteryStatus.level}%` : '--%'}
-              </span>
-          </div>
-
           <button onClick={handleLogout} onMouseEnter={() => setIsLogoutHovered(true)} onMouseLeave={() => setIsLogoutHovered(false)} style={{ padding: '10px 20px', backgroundColor: isLogoutHovered ? '#c0392b' : '#e74c3c', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer', fontWeight: 'bold', fontSize: '1em', width: isMobile ? '100%' : 'auto', transition: 'background-color 0.3s ease, box-shadow 0.3s ease', boxShadow: isLogoutHovered ? '0 4px 8px rgba(231, 76, 60, 0.4)' : 'none' }}>
             Logout
           </button>
