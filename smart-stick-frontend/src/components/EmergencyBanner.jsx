@@ -1,52 +1,41 @@
-import React, { useState } from 'react';
-import { FaExclamationTriangle } from 'react-icons/fa';
+// scripts/replace-sw-vars.cjs
+const replace = require('replace-in-file');
+const path = require('path');
 
-const EmergencyBanner = ({ isEmergency, onClear, isMobile }) => {
-    const [isHovered, setIsHovered] = useState(false);
+// Load .env file for local builds
+require('dotenv').config({ path: path.resolve(process.cwd(), '.env') });
 
-    if (!isEmergency) return null;
+const swFilePath = path.resolve(__dirname, '..', 'public', 'firebase-messaging-sw.js');
 
-    return (
-        <div style={{
-            backgroundColor: '#e74c3c',
-            color: 'white',
-            padding: '15px 25px',
-            borderRadius: '8px',
-            marginBottom: '25px',
-            display: 'flex',
-            flexDirection: isMobile ? 'column' : 'row',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            gap: '15px',
-            boxShadow: '0 4px 15px rgba(231, 76, 60, 0.4)',
-            animation: 'emergency-pulse 2s infinite'
-        }}>
-            <div style={{ display: 'flex', alignItems: 'center', fontSize: '1.2em', fontWeight: 'bold' }}>
-                <FaExclamationTriangle style={{ marginRight: '15px', fontSize: '1.5em' }} />
-                <span>EMERGENCY ALERT: Panic Button Pressed!</span>
-            </div>
-            <button 
-                onClick={onClear}
-                onMouseEnter={() => setIsHovered(true)}
-                onMouseLeave={() => setIsHovered(false)}
-                style={{
-                    backgroundColor: isHovered ? '#f1f1f1' : 'white',
-                    color: '#e74c3c',
-                    border: 'none',
-                    padding: '10px 25px',
-                    borderRadius: '5px',
-                    fontWeight: 'bold',
-                    cursor: 'pointer',
-                    fontSize: '1em',
-                    whiteSpace: 'nowrap',
-                    transition: 'background-color 0.3s ease, box-shadow 0.3s ease',
-                    boxShadow: isHovered ? '0 4px 8px rgba(0,0,0,0.2)' : 'none'
-                }}
-            >
-                Clear Emergency
-            </button>
-        </div>
-    );
+console.log('Running replacement script for service worker...');
+
+const replacements = {
+    'REPLACE_WITH_YOUR_FIREBASE_API_KEY': process.env.VITE_FIREBASE_API_KEY,
+    'REPLACE_WITH_YOUR_FIREBASE_AUTH_DOMAIN': process.env.VITE_FIREBASE_AUTH_DOMAIN,
+    'REPLACE_WITH_YOUR_FIREBASE_PROJECT_ID': process.env.VITE_FIREBASE_PROJECT_ID,
+    'REPLACE_WITH_YOUR_FIREBASE_STORAGE_BUCKET': process.env.VITE_FIREBASE_STORAGE_BUCKET,
+    'REPLACE_WITH_YOUR_FIREBASE_MESSAGING_SENDER_ID': process.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+    'REPLACE_WITH_YOUR_FIREBASE_APP_ID': process.env.VITE_FIREBASE_APP_ID,
 };
 
-export default EmergencyBanner;
+// Check if all environment variables are present
+const missingVars = Object.keys(replacements).filter(key => !replacements[key]);
+
+if (missingVars.length > 0) {
+    console.error('FATAL ERROR: Missing environment variables for service worker build:');
+    missingVars.forEach(key => console.error(`- VITE_${key.replace('REPLACE_WITH_YOUR_', '')}`));
+    console.error('Please ensure they are set in your .env file or Vercel environment variables.');
+    process.exit(1);
+}
+
+try {
+    const results = replace.sync({
+        files: swFilePath,
+        from: Object.keys(replacements).map(key => new RegExp(key, 'g')),
+        to: Object.values(replacements),
+    });
+    console.log('Service worker environment variables replaced successfully.');
+} catch (error) {
+    console.error('Error replacing variables in service worker:', error);
+    process.exit(1);
+}

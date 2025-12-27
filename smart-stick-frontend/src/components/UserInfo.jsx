@@ -1,7 +1,7 @@
 // src/components/UserInfo.js
 
 import React, { useState, useEffect } from 'react';
-import { FaPencilAlt, FaTimes, FaSave, FaIdCard, FaMapMarkerAlt, FaPhoneAlt, FaTint, FaCalendarAlt, FaVenusMars, FaBriefcaseMedical, FaCamera } from 'react-icons/fa';
+import { FaUser, FaPencilAlt, FaTimes, FaSave, FaIdCard, FaMapMarkerAlt, FaPhoneAlt, FaTint, FaCalendarAlt, FaVenusMars, FaBriefcaseMedical, FaCamera, FaLock } from 'react-icons/fa';
 import { TailSpin } from 'react-loader-spinner';
 import api from '../utils/api'; // Import the api utility
 import { toast } from 'react-toastify';
@@ -41,10 +41,18 @@ const UserInfo = () => {
     const [loading, setLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const [error, setError] = useState('');
-    const [activeTab, setActiveTab] = useState('profile'); // 'profile', 'edit', 'password', 'email'
+    const [isEditing, setIsEditing] = useState(false);
+    const [isChangingPassword, setIsChangingPassword] = useState(false);
     const [form, setForm] = useState({});
+    const [passwordForm, setPasswordForm] = useState({
+        currentPassword: '',
+        newPassword: '',
+        confirmNewPassword: ''
+    });
+    const [isEditHovered, setIsEditHovered] = useState(false); // State for hover effect
     const [isSaveHovered, setIsSaveHovered] = useState(false);
     const [isCancelHovered, setIsCancelHovered] = useState(false);
+    const [isPasswordHovered, setIsPasswordHovered] = useState(false);
     
     const [windowWidth, setWindowWidth] = useState(window.innerWidth);
 
@@ -58,7 +66,6 @@ const UserInfo = () => {
                 const res = await api.get('/api/user/profile');
                 const profileData = {
                     fullName: res.data.fullName || '',
-                    email: res.data.email || '',
                     birthDate: res.data.birthDate ? new Date(res.data.birthDate).toISOString().split('T')[0] : '',
                     age: res.data.age || '',
                     gender: res.data.gender || '',
@@ -99,7 +106,6 @@ const UserInfo = () => {
             const res = await api.put('/api/user/profile', form);
             const updatedProfileData = {
                 fullName: res.data.fullName || '',
-                email: res.data.email || '',
                 birthDate: res.data.birthDate ? new Date(res.data.birthDate).toISOString().split('T')[0] : '',
                 age: res.data.age || '',
                 gender: res.data.gender || '',
@@ -111,7 +117,7 @@ const UserInfo = () => {
                 profileImage: res.data.profileImage || '',
             };
             setUserData(updatedProfileData);
-            setActiveTab('profile');
+            setIsEditing(false);
             toast.success("Personal information updated!");
         } catch (err) {
             const errorMessage = err.response?.data?.msg || "Failed to update information.";
@@ -129,6 +135,37 @@ const UserInfo = () => {
             setForm({ ...form, birthDate: value, age: age });
         } else {
             setForm({ ...form, [name]: value });
+        }
+    };
+
+    const handlePasswordChangeInput = (e) => {
+        setPasswordForm({ ...passwordForm, [e.target.name]: e.target.value });
+    };
+
+    const submitPasswordChange = async (e) => {
+        e.preventDefault();
+        if (passwordForm.newPassword !== passwordForm.confirmNewPassword) {
+            toast.error("New passwords do not match.");
+            return;
+        }
+        if (passwordForm.newPassword.length < 6) {
+            toast.error("Password must be at least 6 characters.");
+            return;
+        }
+        setIsSaving(true);
+        try {
+            await api.put('/api/user/change-password', {
+                currentPassword: passwordForm.currentPassword,
+                newPassword: passwordForm.newPassword
+            });
+            toast.success("Password changed successfully!");
+            setIsChangingPassword(false);
+            setPasswordForm({ currentPassword: '', newPassword: '', confirmNewPassword: '' });
+        } catch (err) {
+            const errorMessage = err.response?.data?.msg || "Failed to change password.";
+            toast.error(errorMessage);
+        } finally {
+            setIsSaving(false);
         }
     };
 
@@ -164,6 +201,20 @@ const UserInfo = () => {
         document.getElementById('profileImageInput').click();
     };
 
+    const editButtonStyle = {
+        gridColumn: '1 / -1',
+        padding: '12px 25px',
+        backgroundColor: isEditHovered ? '#008C9E' : '#00ADB5', // Darker on hover
+        color: 'white',
+        border: 'none',
+        borderRadius: '5px',
+        cursor: 'pointer',
+        marginTop: '20px',
+        fontWeight: 'bold',
+        boxShadow: isEditHovered ? '0 4px 12px rgba(0, 173, 181, 0.5)' : '0 2px 5px rgba(0, 173, 181, 0.3)',
+        transition: 'all 0.3s ease' // Smooth transition
+    };
+
     const saveButtonStyle = {
         padding: '10px 25px',
         backgroundColor: isSaveHovered ? '#008C9E' : '#00ADB5',
@@ -191,19 +242,17 @@ const UserInfo = () => {
         boxShadow: isCancelHovered ? '0 4px 8px rgba(255, 255, 255, 0.1)' : 'none'
     };
 
-    const actionButtonStyle = {
-        width: '100%',
-        padding: '12px',
-        backgroundColor: 'transparent',
+    const passwordButtonStyle = {
+        gridColumn: '1 / -1',
+        padding: '12px 25px',
+        backgroundColor: isPasswordHovered ? '#222831' : '#393E46',
         color: '#00ADB5',
         border: '2px solid #00ADB5',
         borderRadius: '5px',
         cursor: 'pointer',
+        marginTop: '10px',
         fontWeight: 'bold',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginBottom: '10px',
+        boxShadow: isPasswordHovered ? '0 4px 12px rgba(0, 173, 181, 0.3)' : 'none',
         transition: 'all 0.3s ease'
     };
 
@@ -217,36 +266,37 @@ const UserInfo = () => {
 
     return (
         <div style={{ 
-            display: 'flex',
-            flexDirection: 'column',
+            padding: '15px', 
             backgroundColor: '#393E46', 
             color: '#EEEEEE',
             borderRadius: '10px', 
             boxShadow: '0 4px 15px rgba(0,0,0,0.1)',
             fontFamily: '"Avenir Next", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif',
-            minHeight: '500px',
-            overflow: 'hidden'
+            height: '100%',
+            boxSizing: 'border-box'
         }}>
-            <div style={{ flex: 1, padding: '20px', overflowY: 'auto' }}>
-                <h3 style={{ 
-                    borderBottom: '1px solid #00ADB5', 
-                    paddingBottom: '8px', 
-                    color: '#EEEEEE', 
-                    marginBottom: '20px', 
-                    fontSize: '1.3em',
-                    fontWeight: '600'
-                }}>
-                    {activeTab === 'profile' && 'Personal Information'}
-                    {activeTab === 'edit' && 'Edit Profile'}
-                </h3>
-            {activeTab === 'edit' && (
-                <form onSubmit={handleSave} style={getInfoGridStyle()}>
-                    <div style={{ textAlign: 'center', marginBottom: '20px', gridColumn: '1 / -1', position: 'relative' }}>
-                        <img 
-                            src={form.profileImage || 'https://via.placeholder.com/150'} 
-                            alt="Profile" 
-                            style={{ width: '100px', height: '100px', borderRadius: '50%', objectFit: 'cover', border: '3px solid #00ADB5' }} 
-                        />
+            <h3 style={{ 
+                borderBottom: '1px solid #00ADB5', 
+                paddingBottom: '8px', 
+                color: '#EEEEEE', 
+                marginBottom: '12px', 
+                fontSize: '1.3em',
+                fontWeight: '600',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+            }}>
+                <FaUser style={{ marginRight: '10px', verticalAlign: 'middle', color: '#00ADB5' }} /> Personal Information
+            </h3>
+            
+            <div style={{ textAlign: 'center', marginBottom: '20px', position: 'relative' }}>
+                <img 
+                    src={isEditing ? (form.profileImage || 'https://via.placeholder.com/150') : (userData.profileImage || 'https://via.placeholder.com/150')} 
+                    alt="Profile" 
+                    style={{ width: '100px', height: '100px', borderRadius: '50%', objectFit: 'cover', border: '3px solid #00ADB5' }} 
+                />
+                {isEditing && (
+                    <>
                         <input 
                             type="file" 
                             id="profileImageInput" 
@@ -262,8 +312,13 @@ const UserInfo = () => {
                         }}>
                             <FaCamera />
                         </button>
-                    </div>
+                    </>
+                )}
+            </div>
 
+            {isEditing ? (
+                // Use responsive grid for the form layout
+                <form onSubmit={handleSave} style={getInfoGridStyle()}>
                     {Object.keys(fieldDisplayMap).map(key => (
                         <div key={key}>
                             <label style={{ fontWeight: '600', display: 'block', marginBottom: '5px', color: '#00ADB5', fontSize: '0.9em' }}>{fieldDisplayMap[key]}:</label>
@@ -316,7 +371,7 @@ const UserInfo = () => {
                     <div style={{ gridColumn: '1 / -1', marginTop: '20px', display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
                         <button 
                             type="button" 
-                            onClick={() => { setActiveTab('profile'); setForm(userData); }} 
+                            onClick={() => { setIsEditing(false); setForm(userData); }} 
                             style={cancelButtonStyle}
                             onMouseEnter={() => setIsCancelHovered(true)}
                             onMouseLeave={() => setIsCancelHovered(false)}
@@ -340,19 +395,62 @@ const UserInfo = () => {
                         </button>
                     </div>
                 </form>
-            )}
-
-            {activeTab === 'profile' && (
-                <div style={getInfoGridStyle()}>
-                    {/* Profile Image */}
-                    <div style={{ textAlign: 'center', marginBottom: '20px' }}>
-                        <img 
-                            src={userData.profileImage || 'https://via.placeholder.com/150'} 
-                            alt="Profile" 
-                            style={{ width: '100px', height: '100px', borderRadius: '50%', objectFit: 'cover', border: '3px solid #00ADB5' }} 
+            ) : isChangingPassword ? (
+                <form onSubmit={submitPasswordChange} style={getInfoGridStyle()}>
+                    <h4 style={{ color: '#00ADB5', margin: '10px 0', gridColumn: '1 / -1' }}>Change Password</h4>
+                    
+                    <div>
+                        <label style={{ fontWeight: '600', display: 'block', marginBottom: '5px', color: '#00ADB5', fontSize: '0.9em' }}>Current Password:</label>
+                        <input
+                            type="password"
+                            name="currentPassword"
+                            value={passwordForm.currentPassword}
+                            onChange={handlePasswordChangeInput}
+                            required
+                            style={{ width: '100%', padding: '10px', border: '1px solid #00ADB5', borderRadius: '4px', backgroundColor: '#222831', color: '#EEEEEE', boxSizing: 'border-box' }}
                         />
                     </div>
-                    
+                    <div>
+                        <label style={{ fontWeight: '600', display: 'block', marginBottom: '5px', color: '#00ADB5', fontSize: '0.9em' }}>New Password:</label>
+                        <input
+                            type="password"
+                            name="newPassword"
+                            value={passwordForm.newPassword}
+                            onChange={handlePasswordChangeInput}
+                            required
+                            style={{ width: '100%', padding: '10px', border: '1px solid #00ADB5', borderRadius: '4px', backgroundColor: '#222831', color: '#EEEEEE', boxSizing: 'border-box' }}
+                        />
+                    </div>
+                    <div>
+                        <label style={{ fontWeight: '600', display: 'block', marginBottom: '5px', color: '#00ADB5', fontSize: '0.9em' }}>Confirm New Password:</label>
+                        <input
+                            type="password"
+                            name="confirmNewPassword"
+                            value={passwordForm.confirmNewPassword}
+                            onChange={handlePasswordChangeInput}
+                            required
+                            style={{ width: '100%', padding: '10px', border: '1px solid #00ADB5', borderRadius: '4px', backgroundColor: '#222831', color: '#EEEEEE', boxSizing: 'border-box' }}
+                        />
+                    </div>
+
+                    <div style={{ gridColumn: '1 / -1', marginTop: '20px', display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+                        <button 
+                            type="button" 
+                            onClick={() => { setIsChangingPassword(false); setPasswordForm({ currentPassword: '', newPassword: '', confirmNewPassword: '' }); }} 
+                            style={cancelButtonStyle}
+                            onMouseEnter={() => setIsCancelHovered(true)}
+                            onMouseLeave={() => setIsCancelHovered(false)}
+                        >
+                            <FaTimes style={{ marginRight: '5px' }} /> Cancel
+                        </button>
+                        <button type="submit" style={saveButtonStyle} onMouseEnter={() => setIsSaveHovered(true)} onMouseLeave={() => setIsSaveHovered(false)} disabled={isSaving}>
+                            {isSaving ? <TailSpin color="white" height={20} width={20} /> : <><FaSave style={{ marginRight: '5px' }} /> Update Password</>}
+                        </button>
+                    </div>
+                </form>
+            ) : (
+                // Use responsive grid for the display layout
+                <div style={getInfoGridStyle()}>
                     {Object.keys(fieldDisplayMap).map(key => (
                         <p key={key} style={{ margin: '0', padding: '4px 0', borderBottom: '1px dotted #e0e0e0', display: 'flex', alignItems: 'center', minWidth: 0, lineHeight: '1.4', fontSize: '0.9em' }}>
                             <span style={{ flexShrink: 0, display: 'flex', alignItems: 'center' }}>{iconMap[fieldDisplayMap[key]]}</span>
@@ -364,14 +462,25 @@ const UserInfo = () => {
                             </span>
                         </p>
                     ))}
-                    <div style={{ gridColumn: '1 / -1', marginTop: '20px' }}>
-                        <button onClick={() => { setForm(userData); setActiveTab('edit'); }} style={actionButtonStyle}>
+                    {/* Ensure button spans full width on mobile if needed */}
+                    <div style={{ gridColumn: '1 / -1', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        <button 
+                            onClick={() => { setForm(userData); setIsEditing(true); }} 
+                            style={editButtonStyle}
+                            onMouseEnter={() => setIsEditHovered(true)}
+                            onMouseLeave={() => setIsEditHovered(false)}>
                             <FaPencilAlt style={{ marginRight: '8px' }} /> Edit Information
+                        </button>
+                        <button 
+                            onClick={() => setIsChangingPassword(true)} 
+                            style={passwordButtonStyle}
+                            onMouseEnter={() => setIsPasswordHovered(true)}
+                            onMouseLeave={() => setIsPasswordHovered(false)}>
+                            <FaLock style={{ marginRight: '8px' }} /> Change Password
                         </button>
                     </div>
                 </div>
             )}
-            </div>
         </div>
     );
 };

@@ -4,6 +4,7 @@ const express = require('express');
 const router = express.Router();
 const auth = require('../middleware/auth');
 const User = require('../models/User');
+const bcrypt = require('bcryptjs');
 
 // GET /api/user/profile
 // Desc: Get current user's profile
@@ -98,6 +99,29 @@ router.put('/fcm-token', auth, async (req, res) => {
         res.json({ msg: 'FCM token updated successfully.' });
     } catch (err) {
         console.error('Error saving FCM token:', err.message);
+        res.status(500).send('Server Error');
+    }
+});
+
+// PUT /api/user/change-password
+// Desc: Change user password
+router.put('/change-password', auth, async (req, res) => {
+    const { currentPassword, newPassword } = req.body;
+
+    try {
+        const user = await User.findById(req.user.userId);
+        if (!user) return res.status(404).json({ msg: 'User not found' });
+
+        const isMatch = await bcrypt.compare(currentPassword, user.password);
+        if (!isMatch) return res.status(400).json({ msg: 'Invalid current password' });
+
+        const salt = await bcrypt.genSalt(10);
+        user.password = await bcrypt.hash(newPassword, salt);
+        await user.save();
+
+        res.json({ msg: 'Password updated successfully' });
+    } catch (err) {
+        console.error(err.message);
         res.status(500).send('Server Error');
     }
 });
