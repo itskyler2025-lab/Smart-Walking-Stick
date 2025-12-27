@@ -9,8 +9,6 @@ import api from '../utils/api';
 import { toast } from 'react-toastify';
 
 import EmergencyBanner from './EmergencyBanner';
-import MapControls from './MapControls';
-import LocationHistory from './LocationHistory';
 
 // ===================================================
 // CONFIGURATION
@@ -504,14 +502,6 @@ function LiveMap({ stickId, onLocationUpdate, onStatusChange, onAuthError, onBat
                 {/* RIGHT COLUMN: Live Map & Controls */}
                 <div style={{ minWidth: 0, width: '100%', display: 'flex', flexDirection: 'column' }}>
                     
-                    <MapControls 
-                        mapTypeId={mapTypeId}
-                        setMapTypeId={setMapTypeId}
-                        isFollowing={isFollowing}
-                        onToggleFollow={handleToggleFollow}
-                        isMobile={isDashboardMobile}
-                    />
-
                     {/* Map Container */}
                 <div style={{ boxShadow: '0 6px 20px rgba(0,0,0,0.15)', borderRadius: '10px', overflow: 'hidden', flex: 1, minHeight: '55vh', display: 'flex', flexDirection: 'column' }}>
                         <GoogleMap
@@ -572,9 +562,6 @@ function LiveMap({ stickId, onLocationUpdate, onStatusChange, onAuthError, onBat
                 </div>
             </div>
             
-            {/* 2. BOTTOM ROW: Location History List (FULL WIDTH) */}
-            
-            {/* Date Filter Controls */}
             <div style={{ 
                 marginTop: '20px', 
                 padding: '15px', 
@@ -624,11 +611,6 @@ function LiveMap({ stickId, onLocationUpdate, onStatusChange, onAuthError, onBat
                 )}
             </div>
 
-            <LocationHistory 
-                groupedHistory={groupedHistory} 
-                hasHistory={pathHistory.length > 0} 
-                onSelectPoint={handleHistoryItemClick}
-            />
         </div>
     );
 }
