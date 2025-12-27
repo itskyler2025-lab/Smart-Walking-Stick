@@ -51,12 +51,18 @@ router.put('/profile', auth, async (req, res) => {
     const profileFields = {};
     const allowedFields = [
         'fullName', 'age', 'gender', 'bloodType', 'homeAddress', 
-        'emergencyContactName', 'emergencyContactNumber', 'medicalCondition'
+        'emergencyContactName', 'emergencyContactNumber', 'medicalCondition',
+        'timezone', 'birthdate'
     ];
 
     allowedFields.forEach(field => {
         if (req.body.hasOwnProperty(field)) {
-            profileFields[field] = req.body[field];
+            // Handle clearing date/number fields by setting them to null
+            if ((field === 'birthdate' || field === 'age') && (req.body[field] === '' || req.body[field] === null)) {
+                profileFields[field] = null;
+            } else {
+                profileFields[field] = req.body[field];
+            }
         }
     });
 

@@ -1,7 +1,7 @@
 // src/components/UserInfo.js
 
 import React, { useState, useEffect } from 'react';
-import { FaUser, FaPencilAlt, FaTimes, FaSave, FaIdCard, FaMapMarkerAlt, FaPhoneAlt, FaTint, FaCalendarAlt, FaVenusMars, FaBriefcaseMedical } from 'react-icons/fa';
+import { FaUser, FaPencilAlt, FaTimes, FaSave, FaIdCard, FaMapMarkerAlt, FaPhoneAlt, FaTint, FaCalendarAlt, FaVenusMars, FaBriefcaseMedical, FaBirthdayCake } from 'react-icons/fa';
 import { TailSpin } from 'react-loader-spinner';
 import api from '../utils/api'; // Import the api utility
 import { toast } from 'react-toastify';
@@ -9,6 +9,7 @@ import { toast } from 'react-toastify';
 // This maps backend field names to frontend display names
 const fieldDisplayMap = {
     fullName: "Name",
+    birthdate: "Birthdate",
     age: "Age",
     gender: "Gender",
     bloodType: "Blood Type",
@@ -23,6 +24,7 @@ const validGenders = ['Male', 'Female', 'Other', 'Prefer not to say'];
 
 const iconMap = {
     Name: <FaIdCard style={{ color: '#00ADB5' }} />,
+    Birthdate: <FaBirthdayCake style={{ color: '#00ADB5' }} />,
     Age: <FaCalendarAlt style={{ color: '#00ADB5' }} />,
     Gender: <FaVenusMars style={{ color: '#00ADB5' }} />,
     'Blood Type': <FaTint style={{ color: '#00ADB5' }} />,
@@ -33,6 +35,34 @@ const iconMap = {
 };
 
 const MOBILE_BREAKPOINT = 600;
+
+// Helper function to calculate age from a birthdate string (YYYY-MM-DD)
+const calculateAge = (birthdateString) => {
+    if (!birthdateString) return '';
+    const birthDate = new Date(birthdateString);
+    const today = new Date();
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const m = today.getMonth() - birthDate.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+        age--;
+    }
+    return age >= 0 ? age : '';
+};
+
+// Helper to format date for display, avoiding timezone issues
+const formatDisplayDate = (dateString) => {
+    if (!dateString) return '';
+    // The date string from the form/API is 'YYYY-MM-DD'.
+    // To prevent timezone shifts, we parse it as UTC.
+    const [year, month, day] = dateString.split('-');
+    const date = new Date(Date.UTC(year, month - 1, day));
+    return date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        timeZone: 'UTC'
+    });
+};
 
 const UserInfo = () => {
     const [userData, setUserData] = useState({});
@@ -57,6 +87,8 @@ const UserInfo = () => {
                 const res = await api.get('/api/user/profile');
                 const profileData = {
                     fullName: res.data.fullName || '',
+                    // Format date for <input type="date"> which needs 'YYYY-MM-DD'
+                    birthdate: res.data.birthdate ? new Date(res.data.birthdate).toISOString().split('T')[0] : '',
                     age: res.data.age || '',
                     gender: res.data.gender || '',
                     bloodType: res.data.bloodType || '',
@@ -95,6 +127,7 @@ const UserInfo = () => {
             const res = await api.put('/api/user/profile', form);
             const updatedProfileData = {
                 fullName: res.data.fullName || '',
+                birthdate: res.data.birthdate ? new Date(res.data.birthdate).toISOString().split('T')[0] : '',
                 age: res.data.age || '',
                 gender: res.data.gender || '',
                 bloodType: res.data.bloodType || '',
@@ -116,7 +149,18 @@ const UserInfo = () => {
     };
 
     const handleChange = (e) => {
-        setForm({ ...form, [e.target.name]: e.target.value });
+        const { name, value } = e.target;
+
+        if (name === 'birthdate') {
+            const newAge = calculateAge(value);
+            setForm(prevForm => ({
+                ...prevForm,
+                birthdate: value,
+                age: newAge
+            }));
+        } else {
+            setForm({ ...form, [e.target.name]: e.target.value });
+        }
     };
 
     const editButtonStyle = {
@@ -199,7 +243,25 @@ const UserInfo = () => {
                     {Object.keys(fieldDisplayMap).map(key => (
                         <div key={key}>
                             <label style={{ fontWeight: '600', display: 'block', marginBottom: '5px', color: '#00ADB5', fontSize: '0.9em' }}>{fieldDisplayMap[key]}:</label>
-                            {key === 'bloodType' ? (
+                            {key === 'birthdate' ? (
+                                <input
+                                    type="date"
+                                    name={key}
+                                    value={form[key] || ''}
+                                    onChange={handleChange}
+                                    max={new Date().toISOString().split('T')[0]} // Prevent future dates
+                                    style={{ width: '100%', padding: '10px', border: '1px solid #00ADB5', borderRadius: '4px', transition: 'border-color 0.3s', backgroundColor: '#222831', color: '#EEEEEE', boxSizing: 'border-box' }}
+                                />
+                            ) : key === 'age' ? (
+                                <input
+                                    type="number"
+                                    name={key}
+                                    value={form[key] || ''}
+                                    onChange={handleChange}
+                                    readOnly // Age is now auto-calculated
+                                    style={{ width: '100%', padding: '10px', border: '1px solid #00ADB5', borderRadius: '4px', transition: 'border-color 0.3s', backgroundColor: '#30353d', color: '#aab8c2', boxSizing: 'border-box', cursor: 'not-allowed' }}
+                                />
+                            ) : key === 'bloodType' ? (
                                 <select
                                     name={key}
                                     value={form[key] || ''}
@@ -269,7 +331,9 @@ const UserInfo = () => {
                         <p key={key} style={{ margin: '0', padding: '4px 0', borderBottom: '1px dotted #e0e0e0', display: 'flex', alignItems: 'center', minWidth: 0, lineHeight: '1.4', fontSize: '0.9em' }}>
                             <span style={{ flexShrink: 0, display: 'flex', alignItems: 'center' }}>{iconMap[fieldDisplayMap[key]]}</span>
                             <strong style={{ color: '#00ADB5', margin: '0 5px 0 8px', fontSize: '1em', width: isSmallMobile ? '130px' : '160px', flexShrink: 0 }}>{fieldDisplayMap[key]}:</strong>
-                            <span style={{ flex: 1, wordBreak: 'break-word', overflowWrap: 'anywhere', textAlign: 'left' }}>{userData[key]}</span>
+                            <span style={{ flex: 1, wordBreak: 'break-word', overflowWrap: 'anywhere', textAlign: 'left' }}>
+                                {key === 'birthdate' ? formatDisplayDate(userData[key]) : userData[key]}
+                            </span>
                         </p>
                     ))}
                     {/* Ensure button spans full width on mobile if needed */}

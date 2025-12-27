@@ -31,6 +31,9 @@ const UserSchema = new Schema({
         type: String,
         trim: true
     },
+    birthdate: {
+        type: Date
+    },
     age: {
         type: Number
     },
@@ -52,6 +55,11 @@ const UserSchema = new Schema({
     // Medical Information
     medicalCondition: {
         type: String
+    },
+    // Store user's preferred timezone (e.g., 'America/New_York')
+    timezone: {
+        type: String,
+        default: 'UTC'
     },
     // Field to store the Firebase Cloud Messaging (FCM) token for push notifications
     fcmToken: {

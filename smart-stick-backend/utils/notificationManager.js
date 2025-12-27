@@ -27,7 +27,7 @@ const triggerEmergencyAlerts = async (stickId, latitude, longitude) => {
 
         // Send email if user has an email address
         if (user.email) {
-            sendEmergencyEmail(user.email, stickId, latitude, longitude);
+            sendEmergencyEmail(user.email, stickId, latitude, longitude, user.timezone);
         }
 
         // Send push notification if user has an FCM token

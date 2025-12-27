@@ -43,6 +43,23 @@ module.exports = function(io) {
                 await user.save();
             }
 
+            // --- SPAM PREVENTION LOGIC ---
+            // Determine if we should send a notification. We only want to alert on the *start* of an emergency
+            // or if it's been a long time since the last update to avoid spamming every 10 seconds.
+            let shouldTriggerAlert = false;
+            if (finalEmergencyState) {
+                // Fetch the most recent *saved* location (before we save the new one)
+                const lastLocation = await Location.findOne({ stickId }).sort({ timestamp: -1 });
+
+                // Trigger if:
+                // 1. No previous history exists.
+                // 2. The previous location was NOT an emergency (state change: False -> True).
+                // 3. The previous update was over 5 minutes ago (keep-alive alert).
+                if (!lastLocation || !lastLocation.emergency || (Date.now() - new Date(lastLocation.timestamp).getTime() > 5 * 60 * 1000)) {
+                    shouldTriggerAlert = true;
+                }
+            }
+
             const newLocation = new Location({
                 stickId,
                 batteryLevel,
@@ -61,7 +78,7 @@ module.exports = function(io) {
             io.to(stickId).emit('locationUpdate', newLocation);
             
             // Trigger alerts only for a new, uncleared emergency
-            if (finalEmergencyState) {
+            if (shouldTriggerAlert) {
                 // This is a "fire-and-forget" call. We don't await it because the response
                 // to the ESP32 should not be blocked by the notification sending process.
                 triggerEmergencyAlerts(stickId, latitude, longitude);
