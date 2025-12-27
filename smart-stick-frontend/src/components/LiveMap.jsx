@@ -294,7 +294,9 @@ function LiveMap({ stickId, onLocationUpdate, onStatusChange, onAuthError, onBat
         const socket = io(API_URL, {
             auth: {
                 token: token
-            }
+            },
+            transports: ['websocket'], // Force WebSocket to avoid polling issues
+            reconnectionAttempts: 10
         });
 
         // Join the room for this specific stickId
