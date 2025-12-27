@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { FaCog, FaLock, FaSave, FaEye, FaEyeSlash, FaTimes, FaPencilAlt, FaEnvelope } from 'react-icons/fa';
+import React, { useState, useEffect } from 'react';
+import { FaCog, FaLock, FaSave, FaEye, FaEyeSlash, FaTimes, FaPencilAlt, FaEnvelope, FaUser } from 'react-icons/fa';
 import { TailSpin } from 'react-loader-spinner';
 import api from '../utils/api';
 import { toast } from 'react-toastify';
@@ -15,6 +15,28 @@ const Settings = () => {
   const [showNew, setShowNew] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [isChangePasswordVisible, setIsChangePasswordVisible] = useState(false);
+
+  // Profile State
+  const [profileData, setProfileData] = useState({});
+  const [profileForm, setProfileForm] = useState({});
+  const [profileLoading, setProfileLoading] = useState(true);
+  const [profileSaving, setProfileSaving] = useState(false);
+  const [isChangeProfileVisible, setIsChangeProfileVisible] = useState(false);
+
+  // Field mapping for profile form
+  const fieldDisplayMap = {
+    fullName: "Name",
+    birthdate: "Birthdate",
+    age: "Age",
+    gender: "Gender",
+    bloodType: "Blood Type",
+    homeAddress: "Home Address",
+    emergencyContactName: "Emergency Contact Name",
+    emergencyContactNumber: "Emergency Contact Number",
+    medicalCondition: "Medical Conditions"
+  };
+  const validBloodTypes = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
+  const validGenders = ['Male', 'Female', 'Other', 'Prefer not to say'];
   
   // Email State
   const [emailFormData, setEmailFormData] = useState({
@@ -29,6 +51,34 @@ const Settings = () => {
   const { emailCurrentPassword, newEmail } = emailFormData;
 
   const onChange = e => setFormData({ ...formData, [e.target.name]: e.target.value });
+
+  const onProfileChange = (e) => {
+    const { name, value } = e.target;
+    if (name === 'birthdate') {
+        const newAge = calculateAge(value);
+        setProfileForm(prevForm => ({
+            ...prevForm,
+            birthdate: value,
+            age: newAge
+        }));
+    } else {
+        setProfileForm({ ...profileForm, [e.target.name]: e.target.value });
+    }
+  };
+
+  const calculateAge = (birthdateString) => {
+    if (!birthdateString) return '';
+    const [year, month, day] = birthdateString.split('-').map(Number);
+    const birthDate = new Date(year, month - 1, day);
+    const today = new Date();
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const m = today.getMonth() - birthDate.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+        age--;
+    }
+    return age >= 0 ? age : '';
+  };
+
   const onEmailChange = e => setEmailFormData({ ...emailFormData, [e.target.name]: e.target.value });
 
   const onSubmit = async e => {
@@ -52,11 +102,34 @@ const Settings = () => {
         newPassword: '',
         confirmPassword: '',
       });
+      setIsChangePasswordVisible(false); // Hide form on success
     } catch (err) {
       const errorMessage = err.response?.data?.msg || "Failed to change password.";
       toast.error(errorMessage);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const onProfileSubmit = async (e) => {
+    e.preventDefault();
+    setProfileSaving(true);
+    try {
+        const res = await api.put('/api/user/profile', profileForm);
+        const updatedProfileData = {
+            ...res.data,
+            birthdate: res.data.birthdate ? new Date(res.data.birthdate).toISOString().split('T')[0] : '',
+        };
+        setProfileData(updatedProfileData);
+        setProfileForm(updatedProfileData);
+        setIsChangeProfileVisible(false);
+        toast.success("Personal information updated!");
+    } catch (err) {
+        const errorMessage = err.response?.data?.msg || "Failed to update information.";
+        toast.error(errorMessage);
+        console.error(err);
+    } finally {
+        setProfileSaving(false);
     }
   };
 
@@ -88,6 +161,12 @@ const Settings = () => {
     });
   };
 
+  const handleProfileCancel = () => {
+    setIsChangeProfileVisible(false);
+    // Reset form to the last saved state
+    setProfileForm(profileData);
+  };
+
   const handleEmailCancel = () => {
     setIsChangeEmailVisible(false);
     setEmailFormData({
@@ -96,6 +175,26 @@ const Settings = () => {
     });
   };
   
+  useEffect(() => {
+    const fetchUserData = async () => {
+        try {
+            setProfileLoading(true);
+            const res = await api.get('/api/user/profile');
+            const data = {
+                ...res.data,
+                birthdate: res.data.birthdate ? new Date(res.data.birthdate).toISOString().split('T')[0] : '',
+            };
+            setProfileData(data);
+            setProfileForm(data);
+        } catch (err) {
+            toast.error('Failed to fetch user profile.');
+        } finally {
+            setProfileLoading(false);
+        }
+    };
+    fetchUserData();
+  }, []);
+
   const inputContainerStyle = { position: 'relative', width: '100%', margin: '15px 0' };
   const inputStyle = { width: '100%', padding: '12px', paddingRight: '40px', margin: 0, boxSizing: 'border-box', border: '1px solid #00ADB5', borderRadius: '5px', backgroundColor: '#222831', color: '#EEEEEE' };
   const eyeIconStyle = { position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', cursor: 'pointer', color: '#00ADB5', display: 'flex', alignItems: 'center', fontSize: '1.2em' };
@@ -116,6 +215,52 @@ const Settings = () => {
     }}>
       <h2 style={{ color: '#00ADB5', borderBottom: '1px solid #00ADB5', paddingBottom: '10px', display: 'flex', alignItems: 'center', gap: '10px' }}><FaCog /> Settings</h2>
       
+      <div style={{ marginTop: '30px' }}>
+        <h3 style={{ color: '#EEEEEE', display: 'flex', alignItems: 'center', gap: '10px' }}><FaUser /> Personal Information</h3>
+        {profileLoading ? <TailSpin color="#00ADB5" height={25} width={25} /> : (
+          isChangeProfileVisible ? (
+            <form onSubmit={onProfileSubmit}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '15px' }}>
+                {Object.keys(fieldDisplayMap).map(key => (
+                    <div key={key}>
+                        <label style={{ fontWeight: '600', display: 'block', marginBottom: '5px', color: '#00ADB5', fontSize: '0.9em' }}>{fieldDisplayMap[key]}:</label>
+                        {key === 'birthdate' ? (
+                            <input type="date" name={key} value={profileForm[key] || ''} onChange={onProfileChange} max={new Date().toISOString().split('T')[0]} style={inputStyle} />
+                        ) : key === 'age' ? (
+                            <input type="number" name={key} value={profileForm[key] || ''} readOnly style={{...inputStyle, backgroundColor: '#30353d', cursor: 'not-allowed'}} />
+                        ) : key === 'bloodType' ? (
+                            <select name={key} value={profileForm[key] || ''} onChange={onProfileChange} style={inputStyle}>
+                                <option value="">Select Blood Type</option>
+                                {validBloodTypes.map(type => <option key={type} value={type}>{type}</option>)}
+                            </select>
+                        ) : key === 'gender' ? (
+                            <select name={key} value={profileForm[key] || ''} onChange={onProfileChange} style={inputStyle}>
+                                <option value="">Select Gender</option>
+                                {validGenders.map(type => <option key={type} value={type}>{type}</option>)}
+                            </select>
+                        ) : (
+                            <input type="text" name={key} value={profileForm[key] || ''} onChange={onProfileChange} style={inputStyle} />
+                        )}
+                    </div>
+                ))}
+              </div>
+              <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+                  <button type="button" onClick={handleProfileCancel} style={cancelButtonStyle}>
+                      <FaTimes style={{ marginRight: '8px' }} /> Cancel
+                  </button>
+                  <button type="submit" disabled={profileSaving} style={buttonStyle}>
+                      {profileSaving ? <TailSpin color="white" height={20} width={20} /> : <><FaSave style={{ marginRight: '8px' }} /> Save Info</>}
+                  </button>
+              </div>
+            </form>
+          ) : (
+            <button onClick={() => setIsChangeProfileVisible(true)} style={{...buttonStyle, width: 'auto', marginTop: '10px'}}>
+              <FaPencilAlt style={{ marginRight: '8px' }} /> Edit Information
+            </button>
+          )
+        )}
+      </div>
+
       <div style={{ marginTop: '30px' }}>
         <h3 style={{ color: '#EEEEEE', display: 'flex', alignItems: 'center', gap: '10px' }}><FaEnvelope /> Email</h3>
         

@@ -549,7 +549,11 @@ function LiveMap() {
                             }}
                         >
                             {/* 1. Location History Path (Polyline) */}
-                            {routes.map((route, index) => (
+                            {routes.map((route, index) => {
+                                // Hide all routes when in "Following" (Live) mode to reduce clutter
+                                if (isFollowing) return null;
+
+                                return (
                                 <React.Fragment key={index}>
                                     <Polyline 
                                         path={route} 
@@ -592,7 +596,7 @@ function LiveMap() {
                                         />
                                     )}
                                 </React.Fragment>
-                            ))}
+                            )})}
                             
                             {/* 3. Emergency Pulse Overlay */}
                             {isEmergency && currentLocation && (
