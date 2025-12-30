@@ -8,6 +8,7 @@
 #include <WebServer.h>
 #include <DNSServer.h>
 #include <Preferences.h>
+#include <esp_task_wdt.h> // Include Watchdog Timer library
 
 // ===================================================
 // 1. CONFIGURATION AND PIN ASSIGNMENTS
@@ -59,7 +60,13 @@ const char* root_ca = \
 
 // Buzzer (Passive or Active). Using tone() for compatibility with passive buzzers.
 #define BUZZER_PIN 4
-#define BEEP_FREQUENCY 1000 // Frequency in Hz for the beep sound.
+#define BEEP_FREQUENCY 2500 // Increased to 2500Hz. Small buzzers are louder at higher frequencies (Resonance).
+
+// --- BUZZER TYPE CONFIGURATION ---
+// The MH-FMD module exists in two versions: Passive (PWM) and Active (DC).
+// - If your buzzer makes a "scratchy" sound, uncomment the line below to switch to ACTIVE mode.
+// - If you want different pitches (battery vs obstacle), you must use a PASSIVE buzzer.
+// #define USE_ACTIVE_BUZZER 
 
 #define EMERGENCY_BTN_PIN 14 // Button connected between GPIO 14 and GND. 
 // For 4-pin buttons: Connect GPIO 14 to one pin, and GND to the diagonally opposite pin.
@@ -123,20 +130,21 @@ const long BEEP_2_DURATION_MS = 80;
 const int LOW_BATTERY_THRESHOLD = 20; // Alert when battery is <= 20%
 const unsigned long LOW_BATTERY_WARNING_INTERVAL = 60000; // Repeat every 60 seconds
 unsigned long lastLowBatteryWarningTime = 0;
-const int BATTERY_BEEP_FREQ = 500; // Lower pitch (500Hz) for battery warning
+const int BATTERY_BEEP_FREQ = 1500; // Increased to 1500Hz for better audibility while keeping it distinct.
 const long BATTERY_BEEP_DURATION = 150;
 const long BATTERY_PAUSE_DURATION = 100;
 
 // Dynamic beep interval settings
-const int MAX_OBSTACLE_DIST_CM = 50;      // The max distance to consider an obstacle
+const int MAX_OBSTACLE_DIST_CM = 150;     // Increased range to 150cm for earlier detection
 const int MIN_OBSTACLE_DIST_CM = 5;       // The distance for the fastest beep
-const long FAST_BEEP_COOLDOWN_MS = 100;   // Cooldown for closest obstacles
-const long SLOW_BEEP_COOLDOWN_MS = 600;   // Cooldown for farthest obstacles
+const long FAST_BEEP_COOLDOWN_MS = 50;    // Faster beep when very close
+const long SLOW_BEEP_COOLDOWN_MS = 1000;  // Slower beep when far away
 long currentBeepCooldown = SLOW_BEEP_COOLDOWN_MS; // Holds the dynamically calculated cooldown
 
 // Wi-Fi reconnect timer
 unsigned long lastWifiReconnectAttempt = 0;
 const long WIFI_RECONNECT_INTERVAL_MS = 5000; // Try to reconnect every 5 seconds
+#define WDT_TIMEOUT 20 // Watchdog timeout in seconds (reboot if hung for 20s)
 
 // Power Button State
 unsigned long powerBtnTimer = 0;
@@ -162,6 +170,29 @@ Preferences preferences;
 // ===================================================
 
 /**
+ * @brief Wrapper to turn ON the buzzer. Handles Passive (tone) vs Active (digitalWrite).
+ */
+void startBuzzer(int frequency) {
+    #ifdef USE_ACTIVE_BUZZER
+        digitalWrite(BUZZER_PIN, HIGH); // Active buzzers just need HIGH (or LOW depending on module)
+    #else
+        tone(BUZZER_PIN, frequency);
+    #endif
+}
+
+/**
+ * @brief Wrapper to turn OFF the buzzer.
+ */
+void stopBuzzer() {
+    #ifdef USE_ACTIVE_BUZZER
+        digitalWrite(BUZZER_PIN, LOW);
+    #else
+        noTone(BUZZER_PIN);
+        digitalWrite(BUZZER_PIN, LOW); // Ensure pin is low
+    #endif
+}
+
+/**
  * @brief Interrupt Service Routine for the emergency button.
  */
 void IRAM_ATTR handleButtonInterrupt() {
@@ -183,6 +214,7 @@ void syncTime() {
     // It can take a few seconds to sync.
     int retries = 0;
     while (!getLocalTime(&timeinfo) && retries < 10) {
+      esp_task_wdt_reset(); // Feed watchdog while waiting for NTP
       delay(500);
       Serial.print(".");
       retries++;
@@ -361,6 +393,9 @@ void handleSave() {
   ESP.restart();
 }
 
+// Forward declaration for safety check inside blocking GPRS functions
+bool checkObstacle();
+
 /**
  * @brief Sends an AT command and waits for a specific response, with improved robustness.
  * This version reads the serial response line-by-line to avoid memory issues and
@@ -387,6 +422,14 @@ bool sendATCommand(const char* command, const char* expected_response1, unsigned
     bool line_complete = false;
 
     while (millis() - start_time < timeout) {
+        esp_task_wdt_reset(); // Feed watchdog during long GPRS commands
+        // SAFETY IMPROVEMENT: Keep checking for obstacles while waiting for the modem.
+        // If an obstacle appears, abort the slow GPRS operation to resume buzzing immediately.
+        if (checkObstacle() && !isEmergency) {
+            Serial.println("ABORT: Obstacle detected during GPRS wait. Prioritizing safety.");
+            return false; 
+        }
+
         if (SIM_Serial.available()) {
             char c = SIM_Serial.read();
             if (c == '\n') {
@@ -465,12 +508,17 @@ void startConfigMode() {
 /**
  * @brief Attempts to connect to the configured Wi-Fi network.
  */
-bool connectWiFi(bool enableConfigMode) {
+bool connectWiFi(bool enableConfigMode, bool wait) {
   // Read credentials from persistent storage
-  preferences.begin("wifi-creds", true); // Read-only
-  String ssid = preferences.getString("ssid", "");
-  String pass = preferences.getString("pass", "");
-  preferences.end();
+  static String ssid = "";
+  static String pass = "";
+  
+  if (ssid == "") {
+      preferences.begin("wifi-creds", true); // Read-only
+      ssid = preferences.getString("ssid", "");
+      pass = preferences.getString("pass", "");
+      preferences.end();
+  }
 
   if (ssid == "") {
     startConfigMode();
@@ -485,8 +533,12 @@ bool connectWiFi(bool enableConfigMode) {
   Serial.println("Attempting Wi-Fi connection to: " + ssid);
   WiFi.begin(ssid.c_str(), pass.c_str());
   
+  // If non-blocking, return immediately after starting connection
+  if (!wait) return false;
+
   int attempts = 0;
   while (WiFi.status() != WL_CONNECTED && attempts < 20) {
+    esp_task_wdt_reset(); // Feed watchdog while waiting for Wi-Fi
     // Blink the LED to indicate connection attempt
     digitalWrite(STATUS_LED_PIN, HIGH);
     delay(250);
@@ -566,7 +618,14 @@ void updateGPSData() {
  * @brief Checks the ultrasonic sensor for obstacles.
  */
 bool checkObstacle() {
-    int distance = sonar.ping_cm(); 
+    static unsigned long lastPingTime = 0;
+    static int distance = 0;
+
+    // Limit sensor polling to every 60ms to prevent loop blocking and timing jitter
+    if (millis() - lastPingTime > 60) {
+        lastPingTime = millis();
+        distance = sonar.ping_cm();
+    }
 
     // Debug: Print distance every 500ms to verify sensor is working
     static unsigned long lastDebugTime = 0;
@@ -575,7 +634,8 @@ bool checkObstacle() {
         lastDebugTime = millis();
     }
 
-    if (distance > 0 && distance < MAX_OBSTACLE_DIST_CM) {
+    // Filter out noise: Ignore distances smaller than the minimum reliable distance (5cm)
+    if (distance >= MIN_OBSTACLE_DIST_CM && distance < MAX_OBSTACLE_DIST_CM) {
         // Obstacle is detected. Calculate how fast to beep.
         // Constrain the distance to our mapping range to prevent weird map() results
         int constrainedDist = constrain(distance, MIN_OBSTACLE_DIST_CM, MAX_OBSTACLE_DIST_CM);
@@ -587,7 +647,7 @@ bool checkObstacle() {
         if (buzzerState == BUZZER_IDLE && (millis() - lastBeepFinishTime > currentBeepCooldown)) {
             buzzerState = BUZZER_OBSTACLE_BEEP_1;
             buzzerStateStartTime = millis();
-            tone(BUZZER_PIN, BEEP_FREQUENCY);
+            startBuzzer(BEEP_FREQUENCY);
         }
         return true;
     }
@@ -632,7 +692,7 @@ int getBatteryLevel() {
     float voltage = (raw / 4095.0) * 3.3 * 2.0 * BATTERY_CALIBRATION_FACTOR;
     
     // Debugging: Print voltage to Serial to help with calibration
-    Serial.printf("Battery: Raw=%d, Voltage=%.2fV\n", raw, voltage);
+    // Serial.printf("Battery: Raw=%d, Voltage=%.2fV\n", raw, voltage);
     
     // --- METHOD 1: Simple Linear Mapping (Good for general estimation) ---
     // Maps Li-ion voltage range (approx 3.0V empty to 4.2V full) to 0-100%
@@ -772,6 +832,14 @@ bool sendDataGPRS(String payload) {
  * @brief Main function to prepare and send data, prioritizing Wi-Fi.
  */
 void sendData() {
+    // SAFETY CHECK: Do not attempt blocking transmission if an obstacle is close.
+    // This prevents the device from freezing (lagging) while the user needs the buzzer.
+    // EXCEPTION: Always send if it is an EMERGENCY.
+    if (isObstacle && !isEmergency) {
+        Serial.println("Obstacle detected. Skipping telemetry to prioritize buzzer responsiveness.");
+        return;
+    }
+
     if (currentLatitude == 0.0 && currentLongitude == 0.0) {
         Serial.println("Warning: Skipping transmission, no valid GPS lock yet.");
         
@@ -815,6 +883,7 @@ void sendData() {
         http.begin(client, apiUrl);
         http.addHeader("Content-Type", "application/json");
         http.addHeader("x-api-key", apiKey);
+        http.setTimeout(5000); // Prevent Wi-Fi from hanging for too long
 
         Serial.println("Attempting Wi-Fi transmission...");
         int httpCode = http.POST(jsonPayload + ",\"connectionType\":\"WiFi\"}");
@@ -895,6 +964,15 @@ void setup() {
     // Attach interrupt to the button pin, trigger on FALLING edge (HIGH to LOW)
     attachInterrupt(digitalPinToInterrupt(EMERGENCY_BTN_PIN), handleButtonInterrupt, FALLING);
 
+    // Initialize Watchdog Timer to reset device if it hangs
+    esp_task_wdt_config_t wdt_config = {
+        .timeout_ms = WDT_TIMEOUT * 1000,
+        .idle_core_mask = (1 << 0) | (1 << 1),
+        .trigger_panic = true
+    };
+    esp_task_wdt_init(&wdt_config); 
+    esp_task_wdt_add(NULL); // Add current thread to WDT
+
     // Configure Wake-up Source for Power Button (Wake up when GPIO 33 is LOW)
     esp_sleep_enable_ext0_wakeup((gpio_num_t)POWER_BTN_PIN, 0);
 
@@ -905,7 +983,7 @@ void setup() {
     }
 
     // Initial Wi-Fi connection attempt
-    if (connectWiFi(true)) {
+    if (connectWiFi(true, true)) {
         // Synchronize time for SSL certificate validation
         syncTime();
         // Check for updates on boot
@@ -915,6 +993,7 @@ void setup() {
 
 void loop() {
     unsigned long currentMillis = millis();
+    esp_task_wdt_reset(); // Feed the watchdog every loop iteration
 
     // D0. Power Button Check (Long Press to Sleep/Off)
     // Moved to top of loop to ensure it works even in config mode or when disconnected
@@ -929,9 +1008,10 @@ void loop() {
         if (millis() - powerBtnTimer > 3000) {
             Serial.println("Power Button Held. Entering Deep Sleep...");
             // Visual/Audio feedback before sleep
-            tone(BUZZER_PIN, 500, 500); 
+            startBuzzer(500); 
             digitalWrite(STATUS_LED_PIN, LOW);
             delay(1000); // Wait for beep to finish
+            stopBuzzer();
             
             esp_deep_sleep_start(); // Enter Deep Sleep (OFF)
         }
@@ -951,7 +1031,7 @@ void loop() {
         digitalWrite(STATUS_LED_PIN, LOW); // Turn LED off if disconnected
         if (currentMillis - lastWifiReconnectAttempt >= WIFI_RECONNECT_INTERVAL_MS) {
             lastWifiReconnectAttempt = currentMillis;
-            if (connectWiFi(false)) {
+            if (connectWiFi(false, false)) {
                 syncTime(); // Re-sync time on reconnect
             }
         }
@@ -966,24 +1046,27 @@ void loop() {
     
     // C. Non-blocking Buzzer Control (Double Beep State Machine)
     switch (buzzerState) {
-        // --- Obstacle Pattern (High Pitch Double Beep) ---
+        // --- Obstacle Pattern (Variable Speed Single Beep) ---
         case BUZZER_OBSTACLE_BEEP_1:
             if (currentMillis - buzzerStateStartTime >= BEEP_1_DURATION_MS) {
-                noTone(BUZZER_PIN);
-                buzzerState = BUZZER_OBSTACLE_PAUSE_1;
-                buzzerStateStartTime = currentMillis;
+                stopBuzzer();
+                // Switch to Single Beep pattern for clearer distance feedback (Geiger style)
+                buzzerState = BUZZER_IDLE; 
+                lastBeepFinishTime = currentMillis;
             }
             break;
         case BUZZER_OBSTACLE_PAUSE_1:
+            // Unused in Single Beep pattern
             if (currentMillis - buzzerStateStartTime >= PAUSE_1_DURATION_MS) {
-                tone(BUZZER_PIN, BEEP_FREQUENCY);
+                startBuzzer(BEEP_FREQUENCY);
                 buzzerState = BUZZER_OBSTACLE_BEEP_2;
                 buzzerStateStartTime = currentMillis;
             }
             break;
         case BUZZER_OBSTACLE_BEEP_2:
+            // Unused in Single Beep pattern
             if (currentMillis - buzzerStateStartTime >= BEEP_2_DURATION_MS) {
-                noTone(BUZZER_PIN);
+                stopBuzzer();
                 buzzerState = BUZZER_IDLE; 
                 lastBeepFinishTime = currentMillis; // Mark when the double-beep sequence finished for cooldown
             }
@@ -992,35 +1075,35 @@ void loop() {
         // --- Low Battery Pattern (Low Pitch Triple Beep) ---
         case BUZZER_BATTERY_BEEP_1:
             if (currentMillis - buzzerStateStartTime >= BATTERY_BEEP_DURATION) {
-                noTone(BUZZER_PIN);
+                stopBuzzer();
                 buzzerState = BUZZER_BATTERY_PAUSE_1;
                 buzzerStateStartTime = currentMillis;
             }
             break;
         case BUZZER_BATTERY_PAUSE_1:
              if (currentMillis - buzzerStateStartTime >= BATTERY_PAUSE_DURATION) {
-                tone(BUZZER_PIN, BATTERY_BEEP_FREQ);
+                startBuzzer(BATTERY_BEEP_FREQ);
                 buzzerState = BUZZER_BATTERY_BEEP_2;
                 buzzerStateStartTime = currentMillis;
             }
             break;
         case BUZZER_BATTERY_BEEP_2:
             if (currentMillis - buzzerStateStartTime >= BATTERY_BEEP_DURATION) {
-                noTone(BUZZER_PIN);
+                stopBuzzer();
                 buzzerState = BUZZER_BATTERY_PAUSE_2;
                 buzzerStateStartTime = currentMillis;
             }
             break;
         case BUZZER_BATTERY_PAUSE_2:
              if (currentMillis - buzzerStateStartTime >= BATTERY_PAUSE_DURATION) {
-                tone(BUZZER_PIN, BATTERY_BEEP_FREQ);
+                startBuzzer(BATTERY_BEEP_FREQ);
                 buzzerState = BUZZER_BATTERY_BEEP_3;
                 buzzerStateStartTime = currentMillis;
             }
             break;
         case BUZZER_BATTERY_BEEP_3:
             if (currentMillis - buzzerStateStartTime >= BATTERY_BEEP_DURATION) {
-                noTone(BUZZER_PIN);
+                stopBuzzer();
                 buzzerState = BUZZER_IDLE;
             }
             break;
@@ -1031,9 +1114,10 @@ void loop() {
             // Ensure we have valid readings (not -1) and it's low
             if (batLevel != -1 && batLevel <= LOW_BATTERY_THRESHOLD) {
                  if (currentMillis - lastLowBatteryWarningTime >= LOW_BATTERY_WARNING_INTERVAL) {
+                     Serial.printf("Low Battery Warning (%d%%). Beeping...\n", batLevel);
                      buzzerState = BUZZER_BATTERY_BEEP_1;
                      buzzerStateStartTime = currentMillis;
-                     tone(BUZZER_PIN, BATTERY_BEEP_FREQ);
+                     startBuzzer(BATTERY_BEEP_FREQ);
                      lastLowBatteryWarningTime = currentMillis;
                  }
             }

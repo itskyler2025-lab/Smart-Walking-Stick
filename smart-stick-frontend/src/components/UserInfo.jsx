@@ -37,16 +37,18 @@ const MOBILE_BREAKPOINT = 600;
 
 // Helper to format date for display, avoiding timezone issues
 const formatDisplayDate = (dateString) => {
-    if (!dateString) return '';
-    // The date string from the form/API is 'YYYY-MM-DD'.
-    // To prevent timezone shifts, we parse it as UTC.
-    const [year, month, day] = dateString.split('-');
-    const date = new Date(Date.UTC(year, month - 1, day));
+    if (!dateString) return null;
+    // The date string from the API is a full ISO string (e.g., "1990-05-15T00:00:00.000Z").
+    // new Date() can parse this, but we must specify UTC for display to avoid timezone shifts.
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) {
+        return 'Invalid Date';
+    }
     return date.toLocaleDateString('en-US', {
         year: 'numeric',
         month: 'long',
         day: 'numeric',
-        timeZone: 'UTC'
+        timeZone: 'UTC' // Display in UTC to match the stored value and avoid off-by-one day errors.
     });
 };
 
@@ -128,7 +130,9 @@ const UserInfo = () => {
                         <span style={{ flexShrink: 0, display: 'flex', alignItems: 'center' }}>{iconMap[fieldDisplayMap[key]]}</span>
                         <strong style={{ color: '#00ADB5', margin: '0 5px 0 8px', fontSize: '1em', width: isSmallMobile ? '130px' : '160px', flexShrink: 0 }}>{fieldDisplayMap[key]}:</strong>
                         <span style={{ flex: 1, wordBreak: 'break-word', overflowWrap: 'anywhere', textAlign: 'left' }}>
-                            {key === 'birthdate' ? formatDisplayDate(userData[key]) : (userData[key] || <span style={{opacity: 0.6}}>Not set</span>)}
+                            {key === 'birthdate' 
+                                ? (userData[key] ? formatDisplayDate(userData[key]) : <span style={{opacity: 0.6}}>Not set</span>)
+                                : (userData[key] || <span style={{opacity: 0.6}}>Not set</span>)}
                         </span>
                     </p>
                 ))}
