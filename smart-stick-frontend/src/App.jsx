@@ -79,7 +79,7 @@ const AuthenticatedLayout = () => {
         
         <div style={{ display: 'flex', alignItems: 'center', gap: '20px', flexWrap: 'wrap', justifyContent: isMobile ? 'center' : 'flex-start' }}>
           <h1 style={{ margin: 0, fontSize: '1.8em', background: 'linear-gradient(to right, #00ADB5, #EEEEEE)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', display: 'inline-block' }}>
-            Smart Stick Tracker 
+            TrackMap 
             <span style={{ fontSize: '0.6em', opacity: 0.7, marginLeft: '10px' }}>({stickId})</span>
           </h1>
         </div>
